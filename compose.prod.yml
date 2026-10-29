@@ -1,12 +1,12 @@
-# Production (serveur) : lancé par /srv/roulette/deploy.sh après chaque push sur main.
-# Caddy (stack à part, /srv/caddy) sert https://roulette.natolive.fr et joint le front via le réseau externe `proxy`.
-# Seul le front (`roulette`) rejoint `proxy` : les noms de service y sont partagés entre projets.
+# Production (serveur) : lancé par /srv/casino/deploy.sh après chaque push sur main.
+# Caddy (stack à part, /srv/caddy) sert https://casino.natolive.fr et joint le front via le réseau externe `proxy`.
+# Seul le front (`casino`) rejoint `proxy` : les noms de service y sont partagés entre projets.
 # `.env` à côté de ce fichier (non versionné) : POSTGRES_PASSWORD, IMAGE_TAG.
 name: casino
 
 # Image construite par la CI (GHCR) ; IMAGE_TAG (sha du commit déployé) est écrit dans `.env` par deploy.sh.
 x-app: &app
-  image: ghcr.io/natolive/roulette:${IMAGE_TAG:?IMAGE_TAG manquant dans .env}
+  image: ghcr.io/natolive/casino:${IMAGE_TAG:?IMAGE_TAG manquant dans .env}
   restart: unless-stopped
   environment: &env
     NODE_ENV: production
@@ -46,7 +46,7 @@ services:
       start_period: 60s
       retries: 5
 
-  roulette:
+  casino:
     <<: *app
     working_dir: /repo/frontend
     command: node .output/server/index.mjs

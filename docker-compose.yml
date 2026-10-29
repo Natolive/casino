@@ -10,8 +10,8 @@ x-app: &app
     - /repo/frontend/node_modules
 
 services:
-  # http://roulette.localhost:8090 (*.localhost pointe toujours sur la machine) → le front ;
-  # tableau de bord Traefik : http://traefik.roulette.localhost:8090. Port réglable dans .env (HTTP_PORT).
+  # http://casino.localhost:8090 (*.localhost pointe toujours sur la machine) → le front ;
+  # tableau de bord Traefik : http://traefik.casino.localhost:8090. Port réglable dans .env (HTTP_PORT).
   traefik:
     image: traefik:v3.7.10
     command:
@@ -26,7 +26,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
       - traefik.enable=true
-      - traefik.http.routers.casino-traefik.rule=Host(`traefik.roulette.localhost`)
+      - traefik.http.routers.casino-traefik.rule=Host(`traefik.casino.localhost`)
       - traefik.http.routers.casino-traefik.service=api@internal
 
   db:
@@ -63,7 +63,7 @@ services:
     depends_on: [backend]
     labels:
       - traefik.enable=true
-      - traefik.http.routers.casino.rule=Host(`roulette.localhost`)
+      - traefik.http.routers.casino.rule=Host(`casino.localhost`)
       - traefik.http.services.casino.loadbalancer.server.port=3000
 
 volumes:

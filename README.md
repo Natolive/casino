@@ -9,8 +9,8 @@ cp .env.example .env
 docker compose up -d
 ```
 
-- Le jeu : http://roulette.localhost:8090
-- Le tableau de bord Traefik : http://traefik.roulette.localhost:8090
+- Le jeu : http://casino.localhost:8090
+- Le tableau de bord Traefik : http://traefik.casino.localhost:8090
 
 Le port se règle dans `.env` (`HTTP_PORT`, 8090 par défaut parce que le 80 est souvent déjà pris). Front et API se
 rechargent tout seuls à chaque modification.
@@ -48,17 +48,17 @@ s'applique au prochain démarrage de l'API.
 
 ## Production
 
-En ligne sur https://roulette.natolive.fr, sur le même serveur Docker que Patrimo.
+En ligne sur https://casino.natolive.fr, sur le même serveur Docker que Patrimo.
 
 - **CI** (`.github/workflows/ci.yml`) : à chaque push et PR, migrations sur une vraie base Postgres, tests, typecheck du
   front et construction de l'image de prod. Une modification qui ne touche que la doc (`*.md`) ne la lance pas.
-- **Image** : sur `main`, publiée sur GHCR (`ghcr.io/natolive/roulette:<sha du commit>`), les 10 dernières gardées. Elle
+- **Image** : sur `main`, publiée sur GHCR (`ghcr.io/natolive/casino:<sha du commit>`), les 10 dernières gardées. Elle
   ne contient que le front et le back compilés et les dépendances d'exécution du back.
 - **Déploiement** : push sur `main` avec tests et image au vert → GitHub se connecte au serveur avec une clé qui ne peut
-  lancer que `/srv/roulette/deploy.sh <sha>` (met le dépôt sur ce commit, tire l'image puis
+  lancer que `/srv/casino/deploy.sh <sha>` (met le dépôt sur ce commit, tire l'image puis
   `docker compose -f compose.prod.yml up -d`). Les migrations s'appliquent au démarrage de l'API, puis la CI vérifie
-  `https://roulette.natolive.fr/api/health` depuis l'extérieur. Revenir à une version : relancer le job « deploy » de son
-  exécution dans l'onglet Actions, ou `/srv/roulette/deploy.sh <sha>` sur le serveur.
-- **Sur le serveur** : stack `compose.prod.yml` dans `/srv/roulette/repo`, mot de passe Postgres et tag d'image dans son
-  `.env` (non versionné). HTTPS par Caddy (`/srv/caddy`, commun à tous les projets), qui joint le front (`roulette`) sur
+  `https://casino.natolive.fr/api/health` depuis l'extérieur. Revenir à une version : relancer le job « deploy » de son
+  exécution dans l'onglet Actions, ou `/srv/casino/deploy.sh <sha>` sur le serveur.
+- **Sur le serveur** : stack `compose.prod.yml` dans `/srv/casino/repo`, mot de passe Postgres et tag d'image dans son
+  `.env` (non versionné). HTTPS par Caddy (`/srv/caddy`, commun à tous les projets), qui joint le front (`casino`) sur
   le réseau Docker `proxy` ; l'API passe par le front (`/api`), la base n'est pas exposée.

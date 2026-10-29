@@ -1,6 +1,6 @@
 # Chaque push et PR : migrations sur une vraie base Postgres, tests, typecheck du front, et image de prod construite.
-# Push sur main : image publiée sur GHCR (ghcr.io/natolive/roulette:<sha>) puis, si tout est vert, déploiement
-# (clé SSH qui ne peut lancer que /srv/roulette/deploy.sh <sha>) et vérification du site depuis l'extérieur.
+# Push sur main : image publiée sur GHCR (ghcr.io/natolive/casino:<sha>) puis, si tout est vert, déploiement
+# (clé SSH qui ne peut lancer que /srv/casino/deploy.sh <sha>) et vérification du site depuis l'extérieur.
 # Actions figées sur leur commit (dépôt public : une étiquette peut être déplacée), mises à jour par Dependabot.
 name: CI
 
@@ -69,7 +69,7 @@ jobs:
           context: .
           target: prod
           push: ${{ env.PUBLISH == 'true' }}
-          tags: ghcr.io/natolive/roulette:${{ github.sha }}
+          tags: ghcr.io/natolive/casino:${{ github.sha }}
           # Lie l'image au dépôt (même visibilité, visible dans « Packages »).
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           # Sans attestation : une seule version par commit dans GHCR, ce qui garde le nettoyage simple.
@@ -80,7 +80,7 @@ jobs:
       - if: env.PUBLISH == 'true'
         uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         with:
-          package-name: roulette
+          package-name: casino
           package-type: container
           min-versions-to-keep: 10
 
@@ -91,7 +91,7 @@ jobs:
     concurrency: deploy
     environment:
       name: production
-      url: https://roulette.natolive.fr
+      url: https://casino.natolive.fr
     steps:
       - name: Déploie sur le serveur
         env:
@@ -104,4 +104,4 @@ jobs:
           ssh -i ~/.ssh/deploy nathan@57.129.174.3 ${{ github.sha }}
       # Depuis l'extérieur : DNS, certificat, Caddy, front et API jusqu'à la base.
       - name: Vérifie le site
-        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors https://roulette.natolive.fr/api/health
+        run: curl -fsS --retry 5 --retry-delay 3 --retry-all-errors https://casino.natolive.fr/api/health
