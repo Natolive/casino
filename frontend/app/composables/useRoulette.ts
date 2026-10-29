@@ -40,6 +40,8 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   const staked = computed(() => total(bets.value))
   const available = computed(() => balance.value - staked.value)
   const shown = computed(() => (phase.value === 'result' ? settled.value : bets.value))
+  // Numéro à éclairer sur le tapis : seulement le temps du résultat.
+  const winner = computed(() => (phase.value === 'result' ? (outcome.value?.result ?? null) : null))
 
   // Horloge calée sur celle du serveur, pour le compte à rebours.
   let offset = 0
@@ -265,5 +267,5 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   // Une mise est gagnante si le numéro sorti est l'un des siens.
   const wins = (key: string) => outcome.value !== null && BETS[key]!.includes(outcome.value.result)
 
-  return { balance, history, historyKey, chip, open, phase, round, remaining, timer, verified, outcome, staked, available, shown, lastBets, undoStack, load, place, announce, move, remove, clear, double, rebet, undo, refill, wins }
+  return { balance, history, historyKey, chip, open, phase, round, remaining, timer, verified, outcome, winner, staked, available, shown, lastBets, undoStack, load, place, announce, move, remove, clear, double, rebet, undo, refill, wins }
 }

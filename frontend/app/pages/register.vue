@@ -24,7 +24,7 @@ async function submit() {
   <div>
     <p class="text-emerald-300/80 text-xs font-semibold tracking-[.4em] uppercase">Nouveau joueur</p>
     <h1 class="font-display mt-2 text-4xl font-bold">Inscription</h1>
-    <p class="text-muted mt-3">{{ STARTING_BALANCE.toLocaleString('fr-FR') }} jetons offerts par la maison, dès ton arrivée.</p>
+    <p class="text-muted mt-3">{{ fmtChips(STARTING_BALANCE) }} jetons offerts par la maison, dès ton arrivée.</p>
 
     <UForm
       :schema="registerSchema"

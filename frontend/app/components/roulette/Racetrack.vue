@@ -5,7 +5,8 @@ import { TABLE_H, TABLE_W } from '~/utils/table-layout'
 // Le cylindre à plat (racetrack), comme sur une vraie table : 15 numéros sur chaque longueur, 4 dans l'arrondi de
 // gauche (8, 23, 10, 5) et 3 dans celui de droite (3, 26, 0), dans l'ordre de la roue. Clic sur un numéro : lui et ses
 // deux voisins de chaque côté ; clic sur un secteur : l'annonce (série 5/8, orphelins, série 0/2/3, jeu zéro).
-const props = defineProps<{ bets: Record<string, number>; winner: number | null; locked: boolean }>()
+// `ghost` : piste en transparence (aperçu sur la roue), seuls les numéros et les jetons restent pleins.
+const props = defineProps<{ bets: Record<string, number>; winner?: number | null; locked: boolean; ghost?: boolean }>()
 const emit = defineEmits<{ announce: [keys: string[]] }>()
 
 // Piste en stade, centrée dans un cadre de la taille du tapis (le panneau ne change pas de taille d'une vue à l'autre).
@@ -76,7 +77,7 @@ const lit = computed(() => new Set(hovered.value && !props.locked ? hovered.valu
 <template>
   <svg :viewBox="`0 0 ${TABLE_W} ${H}`" class="block w-full select-none" role="group" aria-label="Annonces du cylindre">
     <RouletteChipDefs />
-    <g :class="locked ? 'pointer-events-none' : 'cursor-pointer'" stroke="#fff" stroke-opacity=".12" stroke-width="2">
+    <g :class="locked ? 'pointer-events-none' : 'cursor-pointer'" stroke="#fff" stroke-opacity=".12" stroke-width="2" :opacity="ghost ? 0.45 : 1">
       <path
         v-for="s in SECTORS"
         :key="s.key"

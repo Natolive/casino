@@ -11,7 +11,7 @@ useHead({ title: 'Choisis ta table', titleTemplate: APP_NAME + ' · %s' })
       <p class="text-emerald-300/80 text-xs font-semibold tracking-[.4em] uppercase">Jetons fictifs · frissons réels</p>
       <h1 class="font-display brand-text mt-4 text-5xl font-bold tracking-tight sm:text-7xl">{{ APP_NAME }}</h1>
       <p class="text-muted mx-auto mt-6 max-w-lg text-lg">
-        À quelle table veux-tu t’asseoir&nbsp;? {{ STARTING_BALANCE.toLocaleString('fr-FR') }} jetons t’attendent, offerts par la maison.
+        À quelle table veux-tu t’asseoir&nbsp;? {{ fmtChips(STARTING_BALANCE) }} jetons t’attendent, offerts par la maison.
       </p>
     </header>
 

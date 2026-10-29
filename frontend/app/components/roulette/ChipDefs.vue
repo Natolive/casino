@@ -1,4 +1,6 @@
 <!-- Dégradés et ombre des jetons, à poser une fois dans chaque <svg> qui en dessine. -->
+<!-- ponytail: ids fixes, en double quand deux tapis sont montés (fondu entre panneau et aperçu) ; sans effet tant que les
+     définitions sont identiques. Préfixer avec useId() si elles divergent un jour. -->
 <template>
   <defs>
     <radialGradient id="chip-shine" cx="35%" cy="30%" r="75%">

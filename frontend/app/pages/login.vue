@@ -48,7 +48,7 @@ async function submit() {
 
     <p class="text-muted mt-8 text-sm">
       Pas encore de compte&nbsp;?
-      <ULink :to="{ path: '/register', query: route.query }" class="text-emerald-300 font-semibold">Inscris-toi</ULink>, {{ STARTING_BALANCE.toLocaleString('fr-FR') }} jetons offerts.
+      <ULink :to="{ path: '/register', query: route.query }" class="text-emerald-300 font-semibold">Inscris-toi</ULink>, {{ fmtChips(STARTING_BALANCE) }} jetons offerts.
     </p>
     <p class="text-dimmed mt-2 text-sm">Mot de passe oublié&nbsp;? Demande à un admin.</p>
   </div>

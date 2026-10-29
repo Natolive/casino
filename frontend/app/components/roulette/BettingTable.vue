@@ -4,7 +4,8 @@ import { CH, CW, LABELS, SPOTS, TABLE_H, TABLE_W, ZERO, cellOf, centerOf } from 
 
 // Le tapis de jeu : clic pour poser le jeton choisi, clic droit pour retirer la mise d'une case, glisser une pile pour la
 // déplacer (lâchée hors du tapis, elle est retirée ; dans un creux du tapis, elle reste où elle était). Survoler une zone éclaire les numéros qu'elle couvre (cheval, carré, sixain…).
-const props = defineProps<{ bets: Record<string, number>; winner: number | null; locked: boolean; wins: (key: string) => boolean }>()
+// `ghost` : tapis en transparence (aperçu sur la roue), seuls les numéros et les jetons restent pleins.
+const props = defineProps<{ bets: Record<string, number>; winner?: number | null; locked: boolean; wins?: (key: string) => boolean; ghost?: boolean }>()
 const emit = defineEmits<{ place: [key: string]; remove: [key: string]; move: [from: string, to: string] }>()
 
 const hovered = ref<string | null>(null)
@@ -63,7 +64,7 @@ const diamond = (x: number, y: number, w: number, h: number) => {
 }
 // Le zéro : pointe vers la gauche, comme sur le tapis.
 const zeroPath = `M${ZERO.x + ZERO.w},${ZERO.y} L${ZERO.x + 22},${ZERO.y} L${ZERO.x},${ZERO.y + ZERO.h / 2} L${ZERO.x + 22},${ZERO.y + ZERO.h} L${ZERO.x + ZERO.w},${ZERO.y + ZERO.h} Z`
-const winnerCell = computed(() => (props.winner === null ? null : props.winner === 0 ? ZERO : cellOf(props.winner)))
+const winnerCell = computed(() => (props.winner == null ? null : props.winner === 0 ? ZERO : cellOf(props.winner)))
 </script>
 
 <template>
@@ -89,10 +90,10 @@ const winnerCell = computed(() => (props.winner === null ? null : props.winner =
     </defs>
 
     <!-- Fond du tapis. -->
-    <rect width="100%" height="100%" rx="18" fill="url(#mat)" />
+    <rect width="100%" height="100%" rx="18" fill="url(#mat)" :fill-opacity="ghost ? 0 : 1" />
 
     <!-- Cases peintes. -->
-    <g stroke="#fff" stroke-opacity=".12" stroke-width="2">
+    <g stroke="#fff" stroke-opacity=".12" stroke-width="2" :opacity="ghost ? 0.45 : 1">
       <path :d="zeroPath" fill="url(#cell-green)" />
       <rect v-for="l in LABELS" :key="l.key" :x="l.x" :y="l.y" :width="l.w" :height="l.h" :fill="l.color && l.key.startsWith('straight') ? LABEL_FILL[l.color] : 'transparent'" />
     </g>
@@ -155,7 +156,7 @@ const winnerCell = computed(() => (props.winner === null ? null : props.winner =
         <g
           v-for="c in chips"
           :key="c.key"
-          :class="{ lost: winner !== null && !wins(c.key), dragging: c.dragging }"
+          :class="{ lost: winner != null && !wins?.(c.key), dragging: c.dragging }"
           class="chip touch-none"
           @pointerdown="grab($event, c.key)"
           @pointermove="follow"

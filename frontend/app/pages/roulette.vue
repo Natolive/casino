@@ -1,236 +1,120 @@
 <script setup lang="ts">
-import { CHIPS, colorOf } from '@casino/shared'
+import type { BetsView } from '~/components/roulette/Bets.vue'
 
+// La table de roulette : assemble la scène. La roue occupe tout l'écran quand les mises sont fermées ; ouvertes, elle
+// glisse à gauche et le panneau des mises arrive à droite.
 useHead({ title: 'Roulette' })
 
 const wheel = useTemplateRef('wheel')
 const game = useRoulette((n) => wheel.value!.spinTo(n))
-const { history, historyKey, chip, open, phase, round, remaining, timer, verified, outcome, staked, available, shown, lastBets, undoStack } = game
+const { open, phase, round, remaining, verified, outcome, winner, available, shown, history, historyKey } = game
 
 await game.load()
 
-// Hash et graine abrégés pour le bandeau ; complets au survol.
-const short = (s: string) => `${s.slice(0, 8)}…${s.slice(-6)}`
+// Tapis classique, ou cylindre à plat pour les annonces ; le même choix vaut pour l'aperçu sur la roue.
+const view = ref<BetsView>('table')
 
-// Solde affiché : compte jusqu'à la nouvelle valeur.
-const displayed = ref(available.value)
-watch(available, (to) => {
-  const from = displayed.value
-  const start = performance.now()
-  const step = (now: number) => {
-    const t = Math.min(1, (now - start) / 700)
-    displayed.value = Math.round(from + (to - from) * (1 - (1 - t) ** 3))
-    if (t < 1) requestAnimationFrame(step)
-  }
-  requestAnimationFrame(step)
-})
-
-const fmt = (n: number) => n.toLocaleString('fr-FR')
-
-const muted = ref(casinoSound.muted)
-function toggleSound() {
-  muted.value = !muted.value
-  casinoSound.setMuted(muted.value)
-}
-const PILL = { red: 'bg-pocket-red', black: 'bg-pocket-black', green: 'bg-pocket-green' }
-const broke = computed(() => available.value < CHIPS[0] && !staked.value)
-
-// Tapis classique, ou cylindre à plat pour les annonces.
-const view = ref<'table' | 'racetrack'>('table')
-const VIEWS = [
-  { label: 'Tapis', value: 'table', icon: 'i-lucide-grid-3x3' },
-  { label: 'Cylindre', value: 'racetrack', icon: 'i-lucide-circle-dashed' },
-]
+// Annonce du croupier à chaque ouverture ou fermeture des mises, pas à l'arrivée sur la page (tour déjà en cours).
+const call = ref<string | null>(null)
+watch(
+  () => (open.value ? 'Faites vos jeux' : phase.value === 'spinning' ? 'Rien ne va plus' : null),
+  (text) => text && (call.value = text),
+)
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col">
-    <header class="flex items-center justify-between gap-2 px-3 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-8">
-      <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-chevron-left" aria-label="Tables" class="justify-self-start"><span class="hidden sm:inline">Tables</span></UButton>
-      <h1 class="font-display brand-text text-xl font-bold tracking-tight sm:text-3xl">Roulette</h1>
-      <div class="flex items-center gap-1 justify-self-end sm:gap-2">
-        <AccountMenu />
-        <UButton
-          variant="ghost"
-          color="neutral"
-          :icon="muted ? 'i-lucide-volume-x' : 'i-lucide-volume-2'"
-          :aria-label="muted ? 'Remettre le son' : 'Couper le son'"
-          @click="toggleSound"
-        />
-        <div class="panel flex items-center gap-2 rounded-full py-1.5 ps-2 pe-4">
-          <span class="grid size-7 place-items-center rounded-full bg-emerald-400 text-emerald-950"><UIcon name="i-lucide-coins" class="size-4" /></span>
-          <span class="font-display text-lg font-bold tabular-nums">{{ fmt(displayed) }}</span>
-        </div>
-      </div>
-    </header>
+  <div class="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
+    <RouletteHeader :balance="available" />
 
-    <main class="grid flex-1 gap-4 px-3 pb-6 sm:px-6 xl:grid-cols-[5fr_7fr] xl:gap-8">
-      <section class="relative aspect-square max-h-[70vh] w-full xl:max-h-[calc(100dvh-5rem)] xl:self-center" aria-label="Cylindre">
+    <main class="stage relative flex flex-1 flex-col gap-4 px-3 pb-4 sm:px-6 xl:block xl:min-h-0 xl:p-0" :class="{ open }">
+      <RouletteAnnounce v-if="call && round" :key="`${round.id}-${call}`" :text="call" :tone="open ? 'go' : 'stop'" />
+      <RouletteResult v-if="phase === 'result' && outcome?.staked" :key="round?.id" :outcome="outcome" />
+
+      <section class="wheel relative w-full" aria-label="Cylindre">
         <div class="absolute inset-0"><RouletteWheel ref="wheel" /></div>
-        <Transition name="banner">
-          <p v-if="phase === 'spinning'" class="font-display text-emerald-200 absolute inset-x-0 bottom-6 text-center text-2xl font-semibold tracking-tight drop-shadow">Rien ne va plus…</p>
-        </Transition>
-        <Transition name="medal">
-          <div v-if="phase === 'result' && outcome" class="absolute inset-x-0 bottom-4 flex flex-col items-center" role="status">
-            <div
-              class="font-display grid size-24 place-items-center rounded-full border-4 border-emerald-300 text-5xl font-bold text-white shadow-[0_0_40px_rgba(52,211,153,.55)]"
-              :class="PILL[colorOf(outcome.result)]"
-            >
-              {{ outcome.result }}
-            </div>
-            <p v-if="outcome.staked" class="mt-3 rounded-full bg-black/60 px-5 py-1.5 text-lg font-bold backdrop-blur">
-              <span v-if="outcome.won > outcome.staked" class="text-emerald-300">Gagné&nbsp;! +{{ fmt(outcome.won - outcome.staked) }}</span>
-              <span v-else-if="outcome.won" class="text-highlighted">{{ fmt(outcome.won) }} jetons récupérés</span>
-              <span v-else class="text-muted">Perdu, la maison remercie</span>
+
+        <RouletteFairness v-if="round" :round="round" :verified="verified" class="absolute bottom-[4%] left-[4%] max-w-[60%]" />
+
+        <!-- Mises fermées : l'état du tour et les derniers numéros en haut à droite, et le tapis en transparence en bas à
+             droite, qui s'efface presque au survol pour laisser voir la roue. -->
+        <Transition name="fade">
+          <div v-if="!open" class="pointer-events-none absolute top-[4%] right-[4%] flex max-w-[60%] flex-col items-end gap-3">
+            <p class="flex items-center gap-2 rounded-full bg-black/55 px-3 py-1 text-[11px] font-bold tracking-[.2em] whitespace-nowrap uppercase backdrop-blur" role="timer">
+              <span class="size-2 rounded-full" :class="phase === 'result' ? 'bg-white/50' : 'animate-pulse bg-red-500'" />
+              <template v-if="phase === 'result'"><span class="text-white/60">Prochain tour</span> <span class="tabular-nums">{{ remaining }}&nbsp;s</span></template>
+              <template v-else>Rien ne va plus</template>
             </p>
+            <RouletteHistory :history="history.slice(0, 8)" :history-key="historyKey" class="max-w-full" />
           </div>
+        </Transition>
+        <Transition name="fade">
+          <div v-if="!open" class="absolute right-[3%] bottom-[4%] w-[min(60%,720px)] opacity-90 transition-opacity duration-300 hover:opacity-25" aria-label="Vos mises">
+            <RouletteBets :view="view" :bets="shown" :winner="winner" :wins="game.wins" locked ghost />
+          </div>
+        </Transition>
+
+        <Transition name="medal">
+          <RouletteMedal v-if="phase === 'result' && outcome" :outcome="outcome" class="pointer-events-none absolute bottom-[calc(4%+3rem)] left-[4%]" />
         </Transition>
       </section>
 
-      <!-- Résultat en plein écran quelques secondes, seulement si l'on a misé, sans bloquer le tapis ; la médaille sur la roue prend le relais. -->
-      <Teleport to="body">
-        <div
-          v-if="phase === 'result' && outcome?.staked"
-          :key="round?.id"
-          class="takeover pointer-events-none fixed inset-0 z-50 grid place-items-center bg-black/70 backdrop-blur-sm"
-          aria-hidden="true"
-        >
-          <div class="flex flex-col items-center text-center">
-            <div
-              class="font-display grid size-40 place-items-center rounded-full border-[6px] border-emerald-300 text-7xl font-bold text-white shadow-[0_0_80px_rgba(52,211,153,.55)] sm:size-52 sm:text-8xl"
-              :class="PILL[colorOf(outcome.result)]"
-            >
-              {{ outcome.result }}
-            </div>
-            <p v-if="outcome.won > outcome.staked" class="font-display brand-text mt-8 text-6xl font-bold tracking-tight tabular-nums sm:text-8xl">+{{ fmt(outcome.won - outcome.staked) }}</p>
-            <p v-if="outcome.won > outcome.staked" class="mt-2 text-xl font-semibold text-emerald-200">Gagné&nbsp;!</p>
-            <p v-else-if="outcome.won" class="font-display mt-8 text-4xl font-bold">{{ fmt(outcome.won) }} jetons récupérés</p>
-            <p v-else class="font-display text-muted mt-8 text-4xl font-bold">Perdu, la maison remercie</p>
-          </div>
-        </div>
-      </Teleport>
-
-      <section class="flex min-w-0 flex-col justify-center gap-4">
-        <div class="flex items-center gap-3">
-          <span class="text-muted shrink-0 text-xs font-semibold tracking-widest uppercase">Derniers</span>
-          <TransitionGroup tag="ol" name="pill" class="flex min-w-0 gap-1.5 overflow-hidden" aria-label="Derniers numéros sortis">
-            <li
-              v-for="(n, i) in history"
-              :key="historyKey - i"
-              class="font-display grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white ring-1 ring-white/15"
-              :class="[PILL[colorOf(n)], i === 0 && 'ring-emerald-300 ring-2']"
-            >
-              {{ n }}
-            </li>
-            <li v-if="!history.length" key="none" class="text-dimmed text-sm">Aucun tour joué</li>
-          </TransitionGroup>
-        </div>
-
-        <!-- Compte à rebours du croupier : la ligne se vide jusqu'à la fin des mises, puis jusqu'au tour suivant. -->
-        <div class="h-1 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
-          <div
-            v-if="timer"
-            :key="timer.key"
-            class="timer h-full origin-left rounded-full transition-colors"
-            :class="open ? (remaining <= 5 ? 'bg-amber-400' : 'bg-emerald-400') : 'bg-white/30'"
-            :style="{ animationDuration: `${timer.total}ms`, animationDelay: `${-timer.elapsed}ms` }"
-          />
-        </div>
-
-        <UTabs v-model="view" :items="VIEWS" :content="false" size="sm" class="w-fit" />
-
-        <div class="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
-          <div class="panel min-w-[636px] rounded-3xl p-2">
-            <RouletteBettingTable
-              v-if="view === 'table'"
-              :bets="shown"
-              :winner="phase === 'result' ? outcome?.result ?? null : null"
-              :locked="!open"
-              :wins="game.wins"
-              @place="game.place"
-              @remove="game.remove"
-              @move="game.move"
-            />
-            <RouletteRacetrack v-else :bets="shown" :winner="phase === 'result' ? outcome?.result ?? null : null" :locked="!open" @announce="game.announce" />
-          </div>
-        </div>
-        <p v-if="view === 'table'" class="text-dimmed -mt-2 text-xs">Clic&nbsp;: poser un jeton (sur un filet ou un coin pour miser à cheval) · clic droit&nbsp;: retirer · glisser une pile&nbsp;: la déplacer, ou la sortir du tapis.</p>
-        <p v-else class="text-dimmed -mt-2 text-xs">Clic sur un numéro&nbsp;: lui et ses deux voisins de chaque côté · sur un secteur&nbsp;: l’annonce, un jeton par mise.</p>
-
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <RouletteChipRack v-model="chip" :available="Math.max(available, 0)" />
-          <div class="flex flex-wrap items-center gap-2">
-            <UButton color="neutral" variant="soft" icon="i-lucide-undo-2" label="Annuler" :disabled="!open || !undoStack.length" @click="game.undo" />
-            <UButton color="neutral" variant="soft" icon="i-lucide-trash-2" label="Effacer" :disabled="!open || !staked" @click="game.clear" />
-            <UButton color="neutral" variant="soft" icon="i-lucide-copy-plus" label="Doubler" :disabled="!open || !staked" @click="game.double" />
-            <UButton
-              color="neutral"
-              variant="soft"
-              icon="i-lucide-rotate-ccw"
-              label="Rejouer"
-              :disabled="!open || !!staked || !Object.keys(lastBets).length"
-              @click="game.rebet"
-            />
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between gap-4">
-          <p class="text-muted">
-            Mise <span class="font-display text-highlighted ms-1 text-2xl font-bold tabular-nums">{{ fmt(staked) }}</span>
-          </p>
-          <UButton v-if="broke" size="xl" icon="i-lucide-coins" label="Recharger mes jetons" @click="game.refill" />
-          <!-- Le croupier mène la table : pas de bouton, un compte à rebours. -->
-          <p class="croupier font-display rounded-full px-8 py-3 text-lg font-semibold" :class="phase === 'betting' && remaining <= 5 && 'animate-pulse'" role="timer">
-            <template v-if="phase === 'betting' && remaining">Faites vos jeux · <span class="tabular-nums">{{ remaining }}&nbsp;s</span></template>
-            <template v-else-if="phase === 'result'">Prochain tour dans <span class="tabular-nums">{{ remaining }}&nbsp;s</span></template>
-            <template v-else>Rien ne va plus</template>
-          </p>
-        </div>
-
-        <!-- Tirage vérifiable : hash publié avant les mises, graine révélée au tirage et recalculée ici. -->
-        <p v-if="round" class="text-dimmed flex min-w-0 items-center gap-1.5 font-mono text-[11px]">
-          <UIcon :name="verified ? 'i-lucide-shield-check' : verified === false ? 'i-lucide-shield-alert' : 'i-lucide-lock'" class="size-3.5 shrink-0" :class="verified ? 'text-success' : verified === false && 'text-error'" />
-          <span class="truncate">
-            Tour {{ round.id }} · sha256 <span :title="round.hash">{{ short(round.hash) }}</span>
-            <template v-if="round.seed">
-              · graine <span :title="round.seed">{{ short(round.seed) }}</span>
-              {{ verified ? '· vérifié' : verified === false ? '· ne correspond pas' : '' }}
-            </template>
-          </span>
-        </p>
-      </section>
+      <Transition name="panel">
+        <RouletteBetPanel v-if="open" v-model:view="view" :game="game" class="xl:absolute xl:top-1/2 xl:right-[2%] xl:max-h-[calc(100%-2rem)] xl:w-[54%] xl:-translate-y-1/2 xl:overflow-y-auto" />
+      </Transition>
     </main>
   </div>
 </template>
 
 <style scoped>
-.takeover {
-  animation: takeover 4s ease both;
+/* Roue : toute la scène quand les mises sont fermées (la 3D suit le cadre, pas de carré), réduite quand le panneau est
+   là ; sur grand écran, elle glisse vers la gauche. */
+.wheel {
+  height: calc(100dvh - 8rem);
+  transition: height .8s cubic-bezier(.65, 0, .35, 1);
 }
-.takeover > div {
-  animation: medal-pop .6s cubic-bezier(.3, 1.5, .5, 1) both;
+.stage.open .wheel {
+  height: min(100vw - 1.5rem, 55vh);
 }
-@keyframes takeover {
-  0% { opacity: 0; }
-  10%, 80% { opacity: 1; }
-  100% { opacity: 0; visibility: hidden; }
+@media (min-width: 1280px) {
+  .wheel,
+  .stage.open .wheel {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 100%;
+    transition-property: top, left, width, height;
+  }
+  /* À côté du panneau, la 3D est un écran aux coins arrondis : les plans rapprochés ne finissent pas en arête vive. */
+  .stage.open .wheel {
+    top: 7%;
+    left: 1%;
+    width: 42%;
+    height: 86%;
+    border-radius: 1.5rem;
+    overflow: hidden;
+  }
 }
-@keyframes medal-pop {
-  from { transform: scale(.6); }
+/* Le panneau arrive une fois la roue partie sur le côté, et s'en va d'un coup. */
+.panel-enter-active {
+  transition: opacity .5s .35s, transform .6s .35s cubic-bezier(.2, .8, .2, 1);
 }
-@media (prefers-reduced-motion: reduce) {
-  .takeover > div { animation: none; }
+.panel-leave-active {
+  transition: opacity .3s, transform .3s;
 }
-.timer {
-  animation: timer linear both;
+.panel-enter-from,
+.panel-leave-to {
+  opacity: 0;
+  transform: translateX(60px);
 }
-@keyframes timer {
-  to { transform: scaleX(0); }
+.fade-enter-active,
+.fade-leave-active,
+.medal-leave-active {
+  transition: opacity .4s;
 }
-.croupier {
-  color: #022c22;
-  background: var(--brand-gradient);
-  box-shadow: 0 10px 30px -10px rgb(52 211 153 / .6);
+.fade-enter-from,
+.fade-leave-to,
+.medal-leave-to {
+  opacity: 0;
 }
 .medal-enter-active {
   transition: opacity .4s, transform .5s cubic-bezier(.3, 1.5, .5, 1);
@@ -239,24 +123,7 @@ const VIEWS = [
   opacity: 0;
   transform: scale(.6);
 }
-.medal-leave-active,
-.banner-enter-active,
-.banner-leave-active {
-  transition: opacity .3s;
-}
-.medal-leave-to,
-.banner-enter-from,
-.banner-leave-to {
-  opacity: 0;
-}
-.pill-enter-active {
-  transition: all .4s;
-}
-.pill-enter-from {
-  opacity: 0;
-  transform: scale(.4);
-}
-.pill-move {
-  transition: transform .4s;
+@media (prefers-reduced-motion: reduce) {
+  .wheel, .panel-enter-active { transition: none; }
 }
 </style>
