@@ -1,6 +1,6 @@
 # Versions fixées (mise à jour volontaire : changer ici, dans docker-compose.yml, compose.prod.yml et ci.yml).
 # Une seule image pour l'espace de travail npm (shared + backend + frontend).
-FROM node:26.10.0-alpine3.24 AS dev
+FROM node:26.12.1-alpine3.24 AS dev
 WORKDIR /repo
 # Manifestes d'abord : `npm ci` reste en cache tant que les dépendances ne changent pas.
 COPY package.json package-lock.json .npmrc ./
@@ -16,7 +16,7 @@ FROM dev AS build
 RUN npm run build -w backend && npm run build -w frontend
 
 # Image de prod : front compilé (autonome) + back compilé et ses seules dépendances d'exécution.
-FROM node:26.10.0-alpine3.24 AS prod
+FROM node:26.12.1-alpine3.24 AS prod
 WORKDIR /repo
 ENV NODE_ENV=production
 COPY package.json package-lock.json .npmrc ./
