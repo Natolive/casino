@@ -40,7 +40,7 @@ defineExpose({ spinTo: (n: number) => scene?.spinTo(n) ?? Promise.resolve() })
       :class="ready ? 'opacity-100' : 'opacity-0'"
       :style="cut ? { animation: `${cut % 2 ? 'cut-a' : 'cut-b'} .3s ease-out` } : undefined"
     />
-    <div v-if="!ready" class="text-muted absolute inset-0 grid place-items-center font-display italic">Le croupier prépare la table…</div>
+    <div v-if="!ready" class="text-muted absolute inset-0 grid place-items-center font-display">Le croupier prépare la table…</div>
 
     <!-- Bandeau de la réalisation. -->
     <p
@@ -49,8 +49,8 @@ defineExpose({ spinTo: (n: number) => scene?.spinTo(n) ?? Promise.resolve() })
       aria-live="polite"
     >
       <template v-if="shot === 'ralenti'">
-        <UIcon name="i-lucide-rewind" class="text-gold-300 size-3.5" />
-        <span class="text-gold-200">Ralenti</span>
+        <UIcon name="i-lucide-rewind" class="text-emerald-300 size-3.5" />
+        <span class="text-emerald-200">Ralenti</span>
       </template>
       <template v-else>
         <span class="size-2 animate-pulse rounded-full bg-red-500" />

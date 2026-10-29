@@ -1,6 +1,6 @@
 export default defineAppConfig({
   ui: {
-    // Laiton du casino (palette `gold` de main.css) ; neutres chauds.
-    colors: { primary: 'gold', neutral: 'stone' },
+    // Accent émeraude, neutres froids.
+    colors: { primary: 'emerald', neutral: 'zinc' },
   },
 })

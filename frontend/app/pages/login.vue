@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { loginSchema, type LoginDto } from '@casino/shared'
+import { loginSchema, STARTING_BALANCE, type LoginDto } from '@casino/shared'
 
 definePageMeta({ layout: 'auth', guest: true })
 useHead({ title: 'Connexion' })
@@ -22,7 +22,7 @@ async function submit() {
 
 <template>
   <div>
-    <p class="text-gold-300/80 text-xs font-semibold tracking-[.4em] uppercase">Bon retour</p>
+    <p class="text-emerald-300/80 text-xs font-semibold tracking-[.4em] uppercase">Bon retour</p>
     <h1 class="font-display mt-2 text-4xl font-bold">Connexion</h1>
     <p class="text-muted mt-3">Ta place t’attend à la table, et tes jetons aussi.</p>
 
@@ -48,7 +48,7 @@ async function submit() {
 
     <p class="text-muted mt-8 text-sm">
       Pas encore de compte&nbsp;?
-      <ULink :to="{ path: '/register', query: route.query }" class="text-gold-300 font-semibold">Inscris-toi</ULink>, 1&nbsp;000 jetons offerts.
+      <ULink :to="{ path: '/register', query: route.query }" class="text-emerald-300 font-semibold">Inscris-toi</ULink>, {{ STARTING_BALANCE.toLocaleString('fr-FR') }} jetons offerts.
     </p>
     <p class="text-dimmed mt-2 text-sm">Mot de passe oublié&nbsp;? Demande à un admin.</p>
   </div>

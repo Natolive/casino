@@ -25,15 +25,15 @@ const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { dat
 
 <template>
   <div class="mx-auto flex min-h-dvh max-w-4xl flex-col px-4 py-3 sm:px-8">
-    <header class="flex items-center justify-between gap-4">
-      <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-chevron-left" label="Tables" />
-      <h1 class="font-display gold-text text-2xl font-bold italic sm:text-3xl">Admin</h1>
-      <AccountMenu />
+    <header class="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+      <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-chevron-left" aria-label="Tables" class="justify-self-start"><span class="hidden sm:inline">Tables</span></UButton>
+      <h1 class="font-display brand-text text-2xl font-bold tracking-tight sm:text-3xl">Admin</h1>
+      <AccountMenu class="justify-self-end" />
     </header>
 
     <main class="mt-8">
       <h2 class="font-display text-xl font-bold">Joueurs <span class="text-muted text-base">({{ users.length }})</span></h2>
-      <div class="gold-frame mt-4 overflow-x-auto rounded-2xl">
+      <div class="panel mt-4 overflow-x-auto rounded-2xl">
         <table class="w-full min-w-[560px] text-left text-sm">
           <thead class="text-muted text-xs tracking-widest uppercase">
             <tr>

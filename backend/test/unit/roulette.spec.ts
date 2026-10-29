@@ -1,4 +1,4 @@
-import { BETS, betsSchema, colorOf, payout, WHEEL } from '@casino/shared';
+import { ANNOUNCES, BETS, betsSchema, colorOf, neighborsOf, payout, WHEEL } from '@casino/shared';
 
 describe('roulette européenne', () => {
   it('a 37 cases, 18 rouges, 18 noires', () => {
@@ -21,6 +21,16 @@ describe('roulette européenne', () => {
     expect(payout([{ bet: 'column:1', amount: 10 }], 34)).toBe(30);
     expect(payout([{ bet: 'red', amount: 10 }, { bet: 'odd', amount: 5 }], 0)).toBe(0);
     expect(payout([{ bet: 'black', amount: 10 }, { bet: 'dozen:3', amount: 5 }], 35)).toBe(20 + 15);
+  });
+
+  it('annonces : des mises du tapis couvrant leur secteur du cylindre', () => {
+    const covered = (bets: string[]) => [...new Set(bets.flatMap((b) => BETS[b]!))].sort((a, b) => a - b);
+    const arc = (from: number, length: number) => Array.from({ length }, (_, i) => WHEEL[(WHEEL.indexOf(from as never) + i) % 37]!).sort((a, b) => a - b);
+    expect(covered(ANNOUNCES.voisins.bets)).toEqual(arc(22, 17));
+    expect(covered(ANNOUNCES.tiers.bets)).toEqual(arc(27, 12));
+    expect(covered(ANNOUNCES.orphelins.bets)).toEqual([...arc(17, 3), ...arc(1, 5)].sort((a, b) => a - b));
+    expect(covered(ANNOUNCES.zero.bets)).toEqual(arc(12, 7));
+    expect(neighborsOf(0)).toEqual(['straight:3', 'straight:26', 'straight:0', 'straight:32', 'straight:15']);
   });
 
   it('refuse une mise inconnue ou en double', () => {

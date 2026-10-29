@@ -13,7 +13,7 @@ export default defineNuxtConfig({
       link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-        { name: 'theme-color', content: '#06100b' },
+        { name: 'theme-color', content: '#09090b' },
       ],
     },
   },
@@ -21,10 +21,10 @@ export default defineNuxtConfig({
   // Salle de jeu : toujours de nuit.
   colorMode: { preference: 'dark', fallback: 'dark', storageKey: 'casino-color-mode' },
   css: ['~/assets/css/main.css'],
-  // Playfair Display pour les titres et les numéros, Manrope pour le texte.
+  // Space Grotesk pour les titres et les numéros, Manrope pour le texte.
   fonts: {
     families: [
-      { name: 'Playfair Display', provider: 'google', weights: [500, 700, 900], styles: ['normal', 'italic'] },
+      { name: 'Space Grotesk', provider: 'google', weights: [500, 600, 700] },
       { name: 'Manrope', provider: 'google', weights: [400, 500, 600, 700, 800] },
     ],
   },

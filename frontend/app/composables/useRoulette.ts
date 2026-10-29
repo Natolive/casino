@@ -1,4 +1,4 @@
-import { BETS, HISTORY_SIZE, MAX_BET, payout, resultOf, type RoundDto, type WalletDto } from '@casino/shared'
+import { BETS, BETTING_MS, HISTORY_SIZE, MAX_BET, SPINNING_MS, payout, resultOf, type RoundDto, type WalletDto } from '@casino/shared'
 
 type Bets = Record<string, number>
 export type Phase = 'betting' | 'spinning' | 'result'
@@ -46,6 +46,13 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   const now = ref(Date.now())
   const clock = setInterval(() => (now.value = Date.now()), 250)
   const remaining = computed(() => (round.value ? Math.max(0, Math.ceil((round.value.endsAt - now.value - offset) / 1000)) : 0))
+  // Phase du croupier en cours : durée totale et temps déjà écoulé, pour la ligne du compte à rebours (animée en CSS, pas
+  // à chaque tic). Recalculé seulement quand le tour est relu.
+  const timer = computed(() => {
+    if (!round.value) return null
+    const total = round.value.phase === 'betting' ? BETTING_MS : SPINNING_MS
+    return { key: `${round.value.id}-${round.value.phase}`, total, elapsed: total - (round.value.endsAt - Date.now() - offset) }
+  })
   // Le tapis accepte des jetons : phase de mises et compte à rebours pas encore à zéro.
   const open = computed(() => phase.value === 'betting' && remaining.value > 0)
 
@@ -198,6 +205,26 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
       casinoSound.chip()
     })
 
+  // Annonce du cylindre : un jeton sur chacune de ses mises, en un seul geste (annulable d'un coup).
+  const announce = (keys: string[]) =>
+    edit((next) => {
+      if (keys.length * chip.value > available.value) return warn('Pas assez de jetons pour cette annonce.'), false
+      for (const k of keys) next[k] = (next[k] ?? 0) + chip.value
+      if (keys.some((k) => next[k]! > MAX_BET)) return warn(`${MAX_BET} jetons au plus par case.`), false
+      casinoSound.chip()
+    })
+
+  // Pile glissée d'une case à l'autre : la mise change de case, le solde ne bouge pas.
+  const move = (from: string, to: string) =>
+    edit((next) => {
+      if (!next[from]) return false
+      const amount = Math.min(next[from], MAX_BET - (next[to] ?? 0))
+      if (amount <= 0) return warn(`${MAX_BET} jetons au plus par case.`), false
+      next[to] = (next[to] ?? 0) + amount
+      if (!(next[from]! -= amount)) delete next[from]
+      casinoSound.chip()
+    })
+
   const remove = (key: string) =>
     edit((next) => {
       if (!next[key]) return false
@@ -238,5 +265,5 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   // Une mise est gagnante si le numéro sorti est l'un des siens.
   const wins = (key: string) => outcome.value !== null && BETS[key]!.includes(outcome.value.result)
 
-  return { balance, history, historyKey, chip, open, phase, round, remaining, verified, outcome, staked, available, shown, lastBets, undoStack, load, place, remove, clear, double, rebet, undo, refill, wins }
+  return { balance, history, historyKey, chip, open, phase, round, remaining, timer, verified, outcome, staked, available, shown, lastBets, undoStack, load, place, announce, move, remove, clear, double, rebet, undo, refill, wins }
 }

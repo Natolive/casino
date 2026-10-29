@@ -9,7 +9,6 @@ const point = (deg: number, r: number) => {
 }
 const sector = (i: number, inner: number, outer: number) =>
   `M${point((i - 0.5) * STEP, outer)} A${outer},${outer} 0 0 1 ${point((i + 0.5) * STEP, outer)} L${point((i + 0.5) * STEP, inner)} A${inner},${inner} 0 0 0 ${point((i - 0.5) * STEP, inner)} Z`
-const FILL = { red: '#a8121f', black: '#151515', green: '#0d7a43' }
 </script>
 
 <template>
@@ -32,7 +31,7 @@ const FILL = { red: '#a8121f', black: '#151515', green: '#0d7a43' }
     </defs>
     <circle r="99" fill="url(#emblem-wood)" stroke="url(#emblem-brass)" stroke-width="1.5" />
     <g class="rotor">
-      <path v-for="(n, i) in WHEEL" :key="n" :d="sector(i, 52, 78)" :fill="FILL[colorOf(n)]" stroke="#e0ad35" stroke-width=".6" />
+      <path v-for="(n, i) in WHEEL" :key="n" :d="sector(i, 52, 78)" :style="{ fill: `var(--color-pocket-${colorOf(n)})` }" stroke="#e0ad35" stroke-width=".6" />
       <text
         v-for="(n, i) in WHEEL"
         :key="`t${n}`"
@@ -41,7 +40,7 @@ const FILL = { red: '#a8121f', black: '#151515', green: '#0d7a43' }
         dominant-baseline="central"
         font-size="7"
         font-weight="700"
-        font-family="Playfair Display, serif"
+        font-family="Space Grotesk, sans-serif"
         fill="#f7f1e1"
       >{{ n }}</text>
       <circle r="52" fill="url(#emblem-cone)" stroke="url(#emblem-brass)" stroke-width="1.2" />

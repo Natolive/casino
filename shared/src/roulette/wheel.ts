@@ -5,5 +5,9 @@ export const WHEEL = [
 
 const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36])
 
+// Place d'un numéro sur le cylindre, et numéro à une place donnée (en faisant le tour).
+export const wheelIndex = (n: number) => WHEEL.indexOf(n as (typeof WHEEL)[number])
+export const wheelAt = (i: number) => WHEEL[((i % 37) + 37) % 37]!
+
 export type PocketColor = 'green' | 'red' | 'black'
 export const colorOf = (n: number): PocketColor => (n === 0 ? 'green' : RED.has(n) ? 'red' : 'black')

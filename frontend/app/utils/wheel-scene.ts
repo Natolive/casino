@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { colorOf, WHEEL } from '@casino/shared'
+import { colorOf, WHEEL, wheelIndex } from '@casino/shared'
 import {
   BALL_R,
   CONE_LIP,
@@ -335,7 +335,7 @@ export async function createWheelScene(canvas: HTMLCanvasElement, onShot: (shot:
 
   const scene = new THREE.Scene()
   // Le tapis se fond dans la pénombre de la salle (le fond de la page).
-  scene.fog = new THREE.Fog(0x06100b, 5.5, 12)
+  scene.fog = new THREE.Fog(0x09090b, 5.5, 12)
   const pmrem = new THREE.PMREMGenerator(renderer)
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
   scene.environmentIntensity = 0.55
@@ -776,7 +776,7 @@ export async function createWheelScene(canvas: HTMLCanvasElement, onShot: (shot:
       // Angle du rotor à la fin du geste : intégrale de la montée en vitesse (courbe en S → vitesse moyenne).
       const rotorAtLaunch = rotorAngle + ((rotorSpeed + launch) / 2) * LIFT_TIME
       const run = simulateBall({ ballAngle: angle, rotorAngle: rotorAtLaunch, rotorSpeed: launch })
-      const shift = pocketShift(run.restAngle, WHEEL.indexOf(n as (typeof WHEEL)[number])) * STEP
+      const shift = pocketShift(run.restAngle, wheelIndex(n)) * STEP
       // Décalage étalé sur tout le temps où la bille est sur la piste (~10 s) : au plus ~0,5 rad/s de plus ou de moins, ce
       // qu'on prend pour un lancer de rotor plus ou moins fort.
       // ponytail: une course qui n'atteint pas le rotor (jamais vu sur 600 essais) garde un décalage instantané.

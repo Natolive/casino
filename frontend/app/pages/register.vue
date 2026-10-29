@@ -22,7 +22,7 @@ async function submit() {
 
 <template>
   <div>
-    <p class="text-gold-300/80 text-xs font-semibold tracking-[.4em] uppercase">Nouveau joueur</p>
+    <p class="text-emerald-300/80 text-xs font-semibold tracking-[.4em] uppercase">Nouveau joueur</p>
     <h1 class="font-display mt-2 text-4xl font-bold">Inscription</h1>
     <p class="text-muted mt-3">{{ STARTING_BALANCE.toLocaleString('fr-FR') }} jetons offerts par la maison, dès ton arrivée.</p>
 
@@ -56,7 +56,7 @@ async function submit() {
 
     <p class="text-muted mt-8 text-sm">
       Déjà un compte&nbsp;?
-      <ULink :to="{ path: '/login', query: route.query }" class="text-gold-300 font-semibold">Connecte-toi</ULink>.
+      <ULink :to="{ path: '/login', query: route.query }" class="text-emerald-300 font-semibold">Connecte-toi</ULink>.
     </p>
   </div>
 </template>

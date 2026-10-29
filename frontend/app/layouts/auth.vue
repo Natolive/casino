@@ -13,8 +13,8 @@ const CHIPS = [
 <template>
   <main class="grid min-h-dvh lg:grid-cols-[1.15fr_1fr]">
     <!-- Panneau de marque sur grand écran ; en dessous, le nom seul au-dessus du formulaire. -->
-    <section class="felt relative isolate hidden flex-col justify-between overflow-hidden border-e border-gold-400/20 p-14 lg:flex">
-      <NuxtLink to="/login" class="font-display gold-text self-start text-2xl font-black italic">{{ APP_NAME }}</NuxtLink>
+    <section class="hero relative isolate hidden flex-col justify-between overflow-hidden border-e border-white/10 p-14 lg:flex">
+      <NuxtLink to="/login" class="font-display brand-text self-start text-2xl font-bold tracking-tight">{{ APP_NAME }}</NuxtLink>
 
       <div class="relative mx-auto aspect-square w-full max-w-md">
         <HomeWheelEmblem class="wheel absolute inset-[12%] drop-shadow-[0_30px_50px_rgba(0,0,0,.7)]" />
@@ -32,15 +32,15 @@ const CHIPS = [
       </div>
 
       <div>
-        <p class="text-gold-300/80 mb-4 text-xs font-semibold tracking-[.4em] uppercase">Jetons fictifs · frissons réels</p>
-        <h2 class="font-display text-5xl leading-[1.05] font-bold xl:text-6xl">Faites vos jeux, <span class="gold-text italic">la maison offre</span>.</h2>
+        <p class="text-emerald-300/80 mb-4 text-xs font-semibold tracking-[.4em] uppercase">Jetons fictifs · frissons réels</p>
+        <h2 class="font-display text-5xl leading-[1.05] font-bold tracking-tight xl:text-6xl">Faites vos jeux, <span class="brand-text tracking-tight">la maison offre</span>.</h2>
         <p class="text-muted mt-6 max-w-md text-lg">Roulette européenne en 3D, tirage vérifiable à chaque tour. Aucun argent réel, juste le plaisir du jeu.</p>
       </div>
     </section>
 
     <section class="enter flex items-center justify-center px-4 py-12 sm:px-10">
       <div class="w-full max-w-sm">
-        <p class="font-display gold-text mb-12 text-center text-4xl font-black italic lg:hidden">{{ APP_NAME }}</p>
+        <p class="font-display brand-text mb-12 text-center text-4xl font-bold tracking-tight lg:hidden">{{ APP_NAME }}</p>
         <slot />
       </div>
     </section>
@@ -48,13 +48,14 @@ const CHIPS = [
 </template>
 
 <style scoped>
-/* Feutre émeraude, éclairé par la lampe de la table, et losanges dorés en filigrane. */
-.felt {
+/* Halo émeraude et cyan sur fond zinc, grille fine en filigrane. */
+.hero {
   background:
-    radial-gradient(55% 45% at 50% 42%, rgb(20 112 63 / .55), transparent 75%),
-    radial-gradient(40% 30% at 90% 0%, rgb(201 144 42 / .18), transparent 70%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Cpath d='M18 4 32 18 18 32 4 18Z' fill='none' stroke='%23e0ad35' stroke-opacity='.07'/%3E%3C/svg%3E"),
-    linear-gradient(#073a21, #04150c);
+    radial-gradient(55% 45% at 50% 42%, rgb(52 211 153 / .16), transparent 75%),
+    radial-gradient(40% 30% at 90% 0%, rgb(34 211 238 / .12), transparent 70%),
+    linear-gradient(rgb(255 255 255 / .04) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgb(255 255 255 / .04) 1px, transparent 1px) 0 0 / 40px 40px,
+    #0c0c0f;
 }
 
 /* Le cylindre tourne doucement, les jetons flottent chacun à son rythme. */
