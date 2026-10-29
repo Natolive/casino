@@ -21,7 +21,7 @@ const broke = computed(() => available.value < CHIPS[0] && !staked.value)
 <template>
   <section class="flex min-w-0 flex-col gap-4">
     <div class="flex items-center gap-4" role="timer">
-      <RouletteCountdown :timer="timer" :remaining="remaining" />
+      <TableCountdown :timer="timer" :remaining="remaining" />
       <div class="min-w-0">
         <p class="text-[11px] font-bold tracking-[.25em] text-emerald-300/80 uppercase">Mises ouvertes</p>
         <p class="font-display text-3xl font-semibold tracking-tight text-[#f4efe3]">Faites vos jeux</p>
@@ -41,12 +41,12 @@ const broke = computed(() => available.value < CHIPS[0] && !staked.value)
     <p v-else class="text-dimmed -mt-2 text-xs">Clic sur un numéro&nbsp;: lui et ses deux voisins de chaque côté · sur un secteur&nbsp;: l’annonce, un jeton par mise.</p>
 
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <RouletteChipRack v-model="chip" :available="Math.max(available, 0)" />
+      <TableChipRack v-model="chip" :available="Math.max(available, 0)" />
       <div class="flex flex-wrap items-center gap-2">
         <UButton color="neutral" variant="soft" icon="i-lucide-undo-2" label="Annuler" :disabled="!undoStack.length" @click="game.undo" />
         <UButton color="neutral" variant="soft" icon="i-lucide-trash-2" label="Effacer" :disabled="!staked" @click="game.clear" />
         <UButton color="neutral" variant="soft" icon="i-lucide-copy-plus" label="Doubler" :disabled="!staked" @click="game.double" />
-        <UButton color="neutral" variant="soft" icon="i-lucide-rotate-ccw" label="Rejouer" :disabled="!!staked || !Object.keys(lastBets).length" @click="game.rebet" />
+        <UButton color="neutral" variant="soft" icon="i-lucide-rotate-ccw" label="Rejouer" :disabled="!!staked || !Object.keys(lastBets).length" @click="game.rebet()" />
       </div>
     </div>
 

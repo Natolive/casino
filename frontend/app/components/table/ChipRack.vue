@@ -21,7 +21,7 @@ const chip = defineModel<number>({ required: true })
       @click="chip = value"
     >
       <svg viewBox="-24 -24 48 48" class="size-11 drop-shadow-[0_4px_4px_rgba(0,0,0,.6)] sm:size-14">
-        <RouletteChip :amount="value" :r="22" />
+        <TableChip :amount="value" :r="22" />
       </svg>
       <span v-if="chip === value" class="absolute -inset-1 rounded-full ring-2 ring-emerald-300 shadow-[0_0_18px_rgba(52,211,153,.7)]" />
     </button>

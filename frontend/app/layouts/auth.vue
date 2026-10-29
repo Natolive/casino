@@ -26,8 +26,8 @@ const CHIPS = [
           viewBox="-24 -24 48 48"
           aria-hidden="true"
         >
-          <RouletteChipDefs />
-          <RouletteChip :amount="chip.amount" :r="20" />
+          <TableChipDefs />
+          <TableChip :amount="chip.amount" :r="20" />
         </svg>
       </div>
 

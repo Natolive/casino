@@ -76,7 +76,7 @@ const lit = computed(() => new Set(hovered.value && !props.locked ? hovered.valu
 
 <template>
   <svg :viewBox="`0 0 ${TABLE_W} ${H}`" class="block w-full select-none" role="group" aria-label="Annonces du cylindre">
-    <RouletteChipDefs />
+    <TableChipDefs />
     <g :class="locked ? 'pointer-events-none' : 'cursor-pointer'" stroke="#fff" stroke-opacity=".12" stroke-width="2" :opacity="ghost ? 0.45 : 1">
       <path
         v-for="s in SECTORS"
@@ -113,7 +113,7 @@ const lit = computed(() => new Set(hovered.value && !props.locked ? hovered.valu
     </g>
 
     <g class="pointer-events-none" filter="url(#chip-shadow)">
-      <RouletteChip v-for="c in placed" :key="c.key" :amount="c.amount" :x="c.x" :y="c.y" :r="19" />
+      <TableChip v-for="c in placed" :key="c.key" :amount="c.amount" :x="c.x" :y="c.y" :r="19" />
     </g>
   </svg>
 </template>

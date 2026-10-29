@@ -4,15 +4,7 @@ import { CHIPS } from '@casino/shared'
 // Jeton de casino en SVG (un <g> centré en x, y) : couleur du plus gros jeton que le montant contient.
 const props = withDefaults(defineProps<{ amount: number; x?: number; y?: number; r?: number }>(), { x: 0, y: 0, r: 20 })
 
-const STYLES: Record<number, { body: string; edge: string; text: string }> = {
-  1: { body: '#ece6d6', edge: '#3b6fd1', text: '#2b2b2b' },
-  5: { body: '#c0162c', edge: '#f4efe3', text: '#fff' },
-  10: { body: '#1d4fa8', edge: '#f4efe3', text: '#fff' },
-  25: { body: '#14804b', edge: '#f4efe3', text: '#fff' },
-  100: { body: '#161616', edge: '#e0ad35', text: '#f2dc95' },
-  500: { body: '#6b2a9e', edge: '#f2dc95', text: '#fff' },
-}
-const style = computed(() => STYLES[[...CHIPS].reverse().find((c) => c <= props.amount) ?? 1]!)
+const style = computed(() => CHIP_STYLES[[...CHIPS].reverse().find((c) => c <= props.amount) ?? 1]!)
 const label = computed(() => (props.amount >= 1000 ? `${+(props.amount / 1000).toFixed(1)}k`.replace('.', ',') : String(props.amount)))
 // Six inserts sur la tranche : un pointillé épais sur le cercle de la tranche.
 const dash = computed(() => {

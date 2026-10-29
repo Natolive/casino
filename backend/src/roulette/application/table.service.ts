@@ -2,9 +2,11 @@ import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } fro
 import { BETTING_MS, HISTORY_SIZE, MAX_SEATS, resultOf, SPINNING_MS, WHEEL, type BetsDto, type RoundDto, type SeatDto, type TableEvent, type TableRoundDto, type UserDto } from '@casino/shared';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { Subject } from 'rxjs';
-import { InsufficientFundsError } from '../domain/insufficient-funds.error.js';
-import { RoundClosedError } from '../domain/round-closed.error.js';
+import { InsufficientFundsError } from '../../common/domain/errors/insufficient-funds.error.js';
+import { RoundClosedError } from '../../common/domain/errors/round-closed.error.js';
 import { RoundRepository } from '../domain/round.repository.js';
+import { Seating } from '../../common/application/seating.js';
+import type { LiveTable } from '../../common/application/live-table.js';
 
 // Délai minimal entre deux envois des places : une rafale de jetons part en un seul message.
 const SEATS_MS = 150;
@@ -17,7 +19,7 @@ const SEATS_MS = 150;
 // ponytail: une table par processus API (tour et places en mémoire) ; un verrou (advisory lock Postgres) et un bus
 // partagé (Postgres LISTEN/NOTIFY) si l'API tourne un jour en plusieurs exemplaires.
 @Injectable()
-export class TableService implements OnApplicationBootstrap, OnApplicationShutdown {
+export class TableService implements OnApplicationBootstrap, OnApplicationShutdown, LiveTable<TableEvent> {
   private readonly logger = new Logger(TableService.name);
   private round: Omit<TableRoundDto, 'now'> | null = null;
   // Graine du tour en cours, gardée secrète jusqu'au tirage.
@@ -25,9 +27,7 @@ export class TableService implements OnApplicationBootstrap, OnApplicationShutdo
   private timer: NodeJS.Timeout | undefined;
   // Arrêt demandé : un appel encore en cours ne relance plus de tour.
   private stopped = false;
-  // Les joueurs à la table, assis (`seat`) ou spectateurs, par ordre d'arrivée : `connections` compte leurs onglets ouverts.
-  private readonly present = new Map<string, { player: number; seat: number | null; name: string; connections: number }>();
-  private arrivals = 0;
+  private readonly seating = new Seating(MAX_SEATS);
   // Places relues et poussées une à la fois, dans l'ordre, et pas plus d'une fois par SEATS_MS.
   private seatsTimer: NodeJS.Timeout | undefined;
   private seatsQueue = Promise.resolve();
@@ -103,34 +103,17 @@ export class TableService implements OnApplicationBootstrap, OnApplicationShutdo
     }, SEATS_MS);
   }
 
-  // Un onglet de plus à la table : le joueur garde sa place, ou prend la première libre, ou attend en spectateur.
-  // Rend ce qui le désigne dans les places (`player`).
+  // Un onglet de plus à la table : rend ce qui désigne le joueur dans les places (`player`).
   join({ id, firstName }: UserDto): number {
-    const present = this.present.get(id) ?? this.arrive(id, firstName);
-    present.connections++;
-    this.fillSeats();
+    const player = this.seating.join(id, firstName);
     this.publishSeats();
-    return present.player;
+    return player;
   }
 
   // Un onglet de moins : sans onglet ni jeton sur le tapis, le joueur s'en va (voir `seats`).
   leave(playerId: string) {
-    const present = this.present.get(playerId);
-    if (present) present.connections--;
+    this.seating.leave(playerId);
     this.publishSeats();
-  }
-
-  private arrive(id: string, name: string) {
-    const present = { player: ++this.arrivals, seat: null, name, connections: 0 };
-    this.present.set(id, present);
-    return present;
-  }
-
-  // Places libres données par ordre d'arrivée : les spectateurs montent à table dès qu'une place se libère.
-  private fillSeats() {
-    const taken = new Set([...this.present.values()].map((p) => p.seat));
-    const free = Array.from({ length: MAX_SEATS }, (_, i) => i + 1).filter((n) => !taken.has(n));
-    for (const p of this.present.values()) if (p.seat === null && free.length) p.seat = free.shift()!;
   }
 
   // Les joueurs assis et leurs mises du tour en cours, et le nombre de spectateurs. Un joueur parti garde sa place tant
@@ -138,14 +121,17 @@ export class TableService implements OnApplicationBootstrap, OnApplicationShutdo
   async seats(): Promise<{ seats: SeatDto[]; spectators: number }> {
     const placed = this.round ? await this.rounds.betsAt(this.round.id) : [];
     const bets = new Map(placed.map((p) => [p.playerId, p]));
-    for (const p of placed) if (!this.present.has(p.playerId)) this.arrive(p.playerId, p.name);
-    for (const [id, p] of this.present) if (!p.connections && !bets.has(id)) this.present.delete(id);
-    this.fillSeats();
-    const seats = [...this.present]
-      .filter(([, p]) => p.seat !== null)
-      .map(([id, p]) => ({ player: p.player, seat: p.seat!, name: p.name, bets: bets.get(id)?.bets ?? [], won: bets.get(id)?.won ?? null }))
-      .sort((a, b) => a.seat - b.seat);
-    return { seats, spectators: this.present.size - seats.length };
+    this.seating.update(new Map(placed.map((p) => [p.playerId, p.name])));
+    const seats = this.seating
+      .seated()
+      .map(({ id, player, seat, name }) => ({ player, seat, name, bets: bets.get(id)?.bets ?? [], won: bets.get(id)?.won ?? null }));
+    return { seats, spectators: this.seating.spectators };
+  }
+
+  // Ce que reçoit un onglet qui arrive : le tour en cours, avec ses mises.
+  async snapshot(playerId: string): Promise<TableEvent | null> {
+    const round = await this.current(playerId);
+    return round && { type: 'round', round };
   }
 
   async current(playerId: string): Promise<RoundDto | null> {

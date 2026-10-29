@@ -27,7 +27,7 @@ watch(
     <AppHeader title="Roulette" :balance="available" />
 
     <main class="stage relative flex flex-1 flex-col gap-4 px-3 pb-4 sm:px-6 xl:block xl:min-h-0 xl:p-0" :class="{ open }">
-      <RouletteAnnounce v-if="call && round" :key="`${round.id}-${call}`" :text="call" :tone="open ? 'go' : 'stop'" />
+      <TableAnnounce v-if="call && round" :key="`${round.id}-${call}`" :text="call" :tone="open ? 'go' : 'stop'" />
       <RouletteResult v-if="phase === 'result' && outcome?.staked" :key="round?.id" :outcome="outcome" />
 
       <section class="wheel relative w-full" aria-label="Cylindre">
@@ -35,7 +35,7 @@ watch(
 
         <RouletteSeats :seats="seats" :spectators="spectators" :seat="seat" :result="phase === 'result'" class="pointer-events-none absolute top-[4%] left-[4%] max-w-[45%]" />
 
-        <RouletteFairness v-if="round" :round="round" :verified="verified" class="absolute bottom-[4%] left-[4%] max-w-[60%]" />
+        <TableFairness v-if="round" :round="round" :verified="verified" class="absolute bottom-[4%] left-[4%] max-w-[60%]" />
 
         <!-- Mises fermées : l'état du tour et les derniers numéros en haut à droite, et le tapis en transparence en bas à
              droite, qui s'efface presque au survol pour laisser voir la roue. -->

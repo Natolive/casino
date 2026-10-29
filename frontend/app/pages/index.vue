@@ -27,6 +27,7 @@ const featured = GAME_ROOMS.flatMap((room) => room.games).filter((game) => game.
       >
         <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_70%_at_20%_50%,rgba(52,211,153,.12),transparent)]" />
         <HomeWheelEmblem v-if="game.id === 'roulette'" class="relative size-44 shrink-0 drop-shadow-[0_18px_30px_rgba(0,0,0,.6)] transition duration-700 group-hover:scale-105 sm:size-56" />
+        <HomeCardsEmblem v-else-if="game.id === 'blackjack'" class="relative size-44 shrink-0 transition duration-700 group-hover:scale-105 sm:size-56" />
         <UIcon v-else :name="game.icon" class="relative size-32 shrink-0 text-emerald-400" />
         <div class="relative">
           <p class="text-xs font-semibold tracking-[.3em] text-emerald-300/80 uppercase">À l’affiche</p>

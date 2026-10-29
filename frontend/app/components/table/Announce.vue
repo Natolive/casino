@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Annonce du croupier en travers de l'écran : un bandeau balaie l'écran, le texte se resserre, puis tout s'efface de
 // lui-même. À remonter (changer de `key`) pour la rejouer.
-defineProps<{ text: string; tone: 'go' | 'stop' }>()
+defineProps<{ text: string; tone: 'go' | 'stop' | 'gold' }>()
 </script>
 
 <template>
@@ -24,6 +24,9 @@ p {
 }
 .go {
   background-image: linear-gradient(90deg, transparent, rgb(16 185 129 / .55) 20%, rgb(16 185 129 / .55) 80%, transparent);
+}
+.gold {
+  background-image: linear-gradient(90deg, transparent, rgb(217 119 6 / .6) 20%, rgb(217 119 6 / .6) 80%, transparent);
 }
 .stop {
   background-image: linear-gradient(90deg, transparent, rgb(220 38 38 / .6) 20%, rgb(220 38 38 / .6) 80%, transparent);

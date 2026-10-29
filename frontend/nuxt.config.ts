@@ -28,6 +28,9 @@ export default defineNuxtConfig({
       { name: 'Manrope', provider: 'google', weights: [400, 500, 600, 700, 800] },
     ],
   },
+  // Les règles partagées sont du code du dépôt, pas une dépendance : jamais pré-empaquetées par Vite, donc jamais en
+  // cache périmé quand on y ajoute ou déplace un export.
+  vite: { optimizeDeps: { exclude: ['@casino/shared'] } },
   // L'API passe par le front sous /api : une seule origine, ni CORS ni cookie tiers.
   // @ts-expect-error -- ponytail: `proxy` marche (Nitro) mais manque au type de Nuxt 4.5 ; à retirer quand le typecheck s'en plaint.
   routeRules: { '/api/**': { proxy: `${process.env.API_URL ?? 'http://backend:3000'}/**` } },

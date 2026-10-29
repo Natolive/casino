@@ -81,7 +81,7 @@ const winnerCell = computed(() => (props.winner == null ? null : props.winner ==
 
 <template>
   <svg ref="svg" :viewBox="`0 0 ${TABLE_W} ${TABLE_H}`" class="block w-full select-none" role="group" aria-label="Tapis de mise" @contextmenu.prevent>
-    <RouletteChipDefs />
+    <TableChipDefs />
     <defs>
       <linearGradient id="cell-red" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#c3182a" />
@@ -186,7 +186,7 @@ const winnerCell = computed(() => (props.winner == null ? null : props.winner ==
           @mouseleave="drag || (hovered = null)"
           @contextmenu.prevent="emit('remove', c.key)"
         >
-          <RouletteChip :amount="c.amount" :x="c.x" :y="c.y" :r="19" />
+          <TableChip :amount="c.amount" :x="c.x" :y="c.y" :r="19" />
         </g>
       </TransitionGroup>
     </g>

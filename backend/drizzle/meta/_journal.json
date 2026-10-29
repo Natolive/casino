@@ -43,6 +43,20 @@
       "when": 1793262651004,
       "tag": "0005_drop_username",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793282167856,
+      "tag": "0006_blackjack",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793283251903,
+      "tag": "0007_blackjack_seats",
+      "breakpoints": true
     }
   ]
 }

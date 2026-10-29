@@ -1,4 +1,4 @@
-import { ConflictError } from '../../common/domain/errors/conflict.error.js';
+import { ConflictError } from './conflict.error.js';
 
 export class InsufficientFundsError extends ConflictError {
   constructor() {

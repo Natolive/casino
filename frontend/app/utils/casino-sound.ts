@@ -1,5 +1,5 @@
-// Sons de la table, synthétisés à la volée (Web Audio, aucun fichier) : roulement de la bille, chocs sur le laiton et sur le
-// bois, jetons posés, petite fanfare quand on gagne. Le contexte audio naît au premier son, après un geste du joueur
+// Sons des tables, synthétisés à la volée (Web Audio, aucun fichier) : roulement de la bille, chocs sur le laiton et sur le
+// bois, jetons posés, cartes données et retournées, petite fanfare quand on gagne. Le contexte audio naît au premier son, après un geste du joueur
 // (exigence des navigateurs). Le choix « son coupé » est gardé dans ce navigateur.
 import type { Material } from './ball-physics'
 
@@ -130,6 +130,24 @@ export const casinoSound = {
   chip() {
     burst(2600, 3, 0.35, 0.03)
     burst(3400, 4, 0.2, 0.025, 0.035)
+  },
+
+  // Carte qui glisse du sabot et claque sur le feutre.
+  card() {
+    burst(5200, 0.8, 0.07, 0.12)
+    burst(1900, 1.5, 0.22, 0.03, 0.1)
+  },
+
+  // Carte retournée : un claquement sec.
+  flip() {
+    burst(3000, 2, 0.28, 0.025)
+    burst(1400, 2, 0.12, 0.04, 0.03)
+  },
+
+  // C'est à vous : deux notes douces.
+  turn() {
+    tone(880, 0.07, 0.3)
+    tone(1318.5, 0.07, 0.4, 0.12)
   },
 
   // Gain : arpège montant.

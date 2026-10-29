@@ -1,0 +1,2 @@
+ALTER TABLE "blackjack_bets" DROP CONSTRAINT "blackjack_bets_round_id_player_id_pk";--> statement-breakpoint
+ALTER TABLE "blackjack_bets" ADD CONSTRAINT "blackjack_bets_round_id_seat_pk" PRIMARY KEY("round_id","seat");

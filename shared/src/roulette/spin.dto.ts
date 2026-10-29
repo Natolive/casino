@@ -1,8 +1,7 @@
 import { z } from 'zod'
 import { BETS, type PlacedBet } from './bets.ts'
 
-// Jetons de la table, et plafond d'une mise sur une case.
-export const CHIPS = [1, 5, 10, 25, 100, 500] as const
+// Plafond d'une mise sur une case.
 export const MAX_BET = 5000
 
 // La table tourne toute seule, pour tout le monde : 25 s pour miser, puis 25 s de tirage (lancer, ~7 à 12 s de course,

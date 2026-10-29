@@ -16,7 +16,7 @@ export const GAME_ROOMS: GameRoom[] = [
     id: 'cards',
     name: 'Cartes',
     games: [
-      { id: 'blackjack', name: 'Blackjack', tagline: 'Approche 21 sans le dépasser', icon: 'i-lucide-spade' },
+      { id: 'blackjack', name: 'Blackjack', tagline: 'Approche 21 sans le dépasser', icon: 'i-lucide-spade', path: '/blackjack' },
       { id: 'poker', name: 'Poker', tagline: 'Texas Hold’em entre joueurs', icon: 'i-lucide-club' },
       { id: 'baccarat', name: 'Baccarat', tagline: 'Banque ou joueur', icon: 'i-lucide-diamond' },
     ],
