@@ -78,6 +78,9 @@ const staked = computed(() => (hands.value.length ? hands.value.reduce((sum, h) 
 const canStand = computed(() => props.mine && (!hands.value.length || result.value))
 const won = computed(() => (result.value ? hands.value.reduce((sum, h) => sum + (h.won ?? 0), 0) : null))
 const house = computed(() => toward(circle.value, RACK))
+// Règlement vu en direct : les jetons filent au croupier ou en arrivent. Arrivé sur une table déjà réglée, ils sont posés.
+const settledLive = ref(false)
+watch(result, (yes) => (settledLive.value = yes && props.animate))
 </script>
 
 <template>
@@ -115,7 +118,7 @@ const house = computed(() => toward(circle.value, RACK))
   <!-- Mise, puis ce que la table rend : perdue, elle part au croupier ; gagnée, le gain arrive à côté. -->
   <Transition name="stack">
     <div
-      v-if="staked"
+      v-if="staked && !(won === 0 && !settledLive)"
       :key="`bet-${box?.player}`"
       class="pile pointer-events-none absolute"
       :class="won === 0 && 'to-house'"
@@ -126,7 +129,8 @@ const house = computed(() => toward(circle.value, RACK))
   </Transition>
   <div
     v-if="won && won > staked"
-    class="pile from-house pointer-events-none absolute"
+    class="pile pointer-events-none absolute"
+    :class="settledLive && 'from-house'"
     :style="{ ...at({ x: circle.x + 46, y: circle.y + 6 }), width: cq(44), fontSize: cq(40), '--lift': cq(22), '--hx': house.x, '--hy': house.y }"
   >
     <BlackjackStack :amount="won - staked" />

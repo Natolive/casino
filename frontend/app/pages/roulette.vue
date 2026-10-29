@@ -7,7 +7,7 @@ useHead({ title: 'Roulette' })
 
 const wheel = useTemplateRef('wheel')
 const game = useRoulette((n) => wheel.value!.spinTo(n))
-const { open, phase, round, remaining, verified, outcome, winner, available, shown, history, historyKey, seats, spectators, seat, others } = game
+const { landed, open, phase, round, remaining, verified, outcome, winner, available, shown, history, historyKey, seats, spectators, seat, others } = game
 
 await game.load()
 
@@ -31,7 +31,7 @@ watch(
       <RouletteResult v-if="phase === 'result' && outcome?.staked" :key="round?.id" :outcome="outcome" />
 
       <section class="wheel relative w-full" aria-label="Cylindre">
-        <div class="absolute inset-0"><RouletteWheel ref="wheel" /></div>
+        <div class="absolute inset-0"><RouletteWheel ref="wheel" :landed="landed" /></div>
 
         <RouletteSeats :seats="seats" :spectators="spectators" :seat="seat" :result="phase === 'result'" class="pointer-events-none absolute top-[4%] left-[4%] max-w-[45%]" />
 

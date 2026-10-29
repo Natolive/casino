@@ -34,6 +34,8 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   const verified = ref<boolean | null>(null)
   // Les mises du tour joué, gardées sur le tapis le temps d'afficher le résultat.
   const settled = ref<Bets>({})
+  // Numéro sorti avant notre arrivée (tirage déjà lancé) : la bille y est posée sans être lancée.
+  const landed = ref<number | null>(null)
   // Numéro à éclairer sur le tapis : seulement le temps du résultat.
   const winner = computed(() => (phase.value === 'result' ? (outcome.value?.result ?? null) : null))
 
@@ -101,9 +103,13 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
     } else if (previous?.id === next.id && previous.phase === 'betting') {
       void reveal(next)
     } else if (previous?.id !== next.id) {
-      // Arrivé en plein tirage, ou tirage d'un autre tour que celui où l'on misait : on attend le tour suivant.
-      phase.value = 'spinning'
+      // Arrivé en plein tirage, ou tirage d'un autre tour que celui où l'on misait : le numéro est déjà sorti, la bille y
+      // est posée et le résultat affiché jusqu'au tour suivant.
       chips.reset()
+      landed.value = next.result!
+      verify(next)
+      outcome.value = { result: next.result!, staked: 0, won: 0 }
+      phase.value = 'result'
       if (previous) void resync()
     }
   }
@@ -119,12 +125,16 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
     }
   }
 
-  // Rien ne va plus : la bille tombe sur le numéro tiré, puis le tapis montre ce qui est gagné.
-  async function reveal(r: TableRoundDto) {
-    phase.value = 'spinning'
+  function verify(r: TableRoundDto) {
     void sha256(r.seed!)
       .then((hash) => (verified.value = hash === r.hash && resultOf(r.seed!) === r.result))
       .catch(() => (verified.value = null))
+  }
+
+  // Rien ne va plus : la bille tombe sur le numéro tiré, puis le tapis montre ce qui est gagné.
+  async function reveal(r: TableRoundDto) {
+    phase.value = 'spinning'
+    verify(r)
     // Onglet caché : pas d'animation (elle ne tourne pas en arrière-plan), le résultat directement.
     if (!document.hidden) await roll(r.result!)
     history.value = [r.result!, ...history.value].slice(0, HISTORY_SIZE)
@@ -162,5 +172,5 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   // Une mise est gagnante si le numéro sorti est l'un des siens.
   const wins = (key: string) => outcome.value !== null && BETS[key]!.includes(outcome.value.result)
 
-  return { history, historyKey, chip, open, phase, round, seats, spectators, seat, others, remaining, timer, verified, outcome, winner, staked, available, shown, lastBets, undoStack, load, place, announce, move, remove, clear, double, rebet, undo, refill, wins }
+  return { history, historyKey, landed, chip, open, phase, round, seats, spectators, seat, others, remaining, timer, verified, outcome, winner, staked, available, shown, lastBets, undoStack, load, place, announce, move, remove, clear, double, rebet, undo, refill, wins }
 }

@@ -314,6 +314,7 @@ function shadows(object: THREE.Object3D, cast: boolean, receive = true) {
 
 export type WheelScene = {
   spinTo: (n: number) => Promise<void>
+  place: (n: number) => void
   resize: (width: number, height: number) => void
   dispose: () => void
 }
@@ -800,6 +801,10 @@ export async function createWheelScene(canvas: HTMLCanvasElement, onShot: (shot:
           resolve,
         }
       })
+    },
+    // La bille posée dans la case de n, sans lancer (tirage déjà fait) ; un lancer en cours n'est pas interrompu.
+    place(n) {
+      if (!spin) phi = wheelIndex(n) * STEP
     },
     dispose() {
       cancelAnimationFrame(frame)

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // Le cylindre en 3D (utils/wheel-scene.ts) ; `spinTo(n)` lance la bille et se résout quand elle est tombée sur n.
-// La scène enchaîne ses plans comme une réalisation télé ; ici, l'effet de coupe.
+// La scène enchaîne ses plans comme une réalisation télé ; ici, l'effet de coupe. `landed` : numéro sorti avant notre
+// arrivée, la bille y est posée sans être lancée.
+const props = defineProps<{ landed: number | null }>()
 const canvas = useTemplateRef('canvas')
 let scene: WheelScene | undefined
 let observer: ResizeObserver | undefined
@@ -12,6 +14,7 @@ onMounted(async () => {
   scene = await createWheelScene(canvas.value!, () => cut.value++)
   observer = new ResizeObserver(([entry]) => scene?.resize(entry!.contentRect.width, entry!.contentRect.height))
   observer.observe(canvas.value!)
+  watch(() => props.landed, (n) => n !== null && scene?.place(n), { immediate: true })
   ready.value = true
 })
 
