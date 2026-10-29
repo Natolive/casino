@@ -1,0 +1,84 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* Salle de jeu de nuit : laque noire, feutre émeraude, laiton. Playfair Display pour les titres et les numéros. */
+@theme static {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+
+  --color-gold-50: #fdf9ec;
+  --color-gold-100: #f9efcc;
+  --color-gold-200: #f2dc95;
+  --color-gold-300: #e9c45c;
+  --color-gold-400: #e0ad35;
+  --color-gold-500: #c9902a;
+  --color-gold-600: #a86f20;
+  --color-gold-700: #86511d;
+  --color-gold-800: #6f421f;
+  --color-gold-900: #5f381e;
+  --color-gold-950: #371c0d;
+
+  --color-felt: #0e5a34;
+  --color-felt-dark: #073a21;
+  --color-casino-red: #a8121f;
+}
+
+:root {
+  --ui-bg: #06100b;
+  --gold-gradient: linear-gradient(180deg, #fbe7a8 0%, #e0ad35 45%, #8e5a1c 100%);
+}
+
+/* Playfair Display a des chiffres « elzéviriens » (le 3, le 5… descendent sous la ligne) : chiffres alignés partout,
+   centrés dans les médailles et les cases. Par `font-feature-settings`, hérité, et qui se cumule avec `tabular-nums`. */
+body {
+  font-feature-settings: "lnum";
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgb(201 144 42 / .12), transparent 70%),
+    radial-gradient(80% 60% at 50% 110%, rgb(14 90 52 / .35), transparent 70%),
+    #06100b;
+  min-height: 100dvh;
+}
+
+.gold-text {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Filet doré des cartes et panneaux. */
+.gold-frame {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#0b1711, #0b1711) padding-box,
+    linear-gradient(160deg, #f2dc95, #86511d 40%, #3a2410 60%, #e9c45c) border-box;
+}
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity .35s, transform .35s;
+}
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* Formulaires de connexion et d'inscription : champs en cascade à l'arrivée, secousse quand l'envoi est refusé. */
+.field {
+  animation: field-enter .5s cubic-bezier(.2, .8, .2, 1) both;
+  animation-delay: calc(var(--i) * 60ms + 120ms);
+}
+@keyframes field-enter {
+  from { opacity: 0; transform: translateY(12px); }
+}
+.shake {
+  animation: shake .4s cubic-bezier(.36, .07, .19, .97);
+}
+@keyframes shake {
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .field, .shake { animation: none; }
+}

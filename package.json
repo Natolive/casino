@@ -1,0 +1,9 @@
+{
+  "name": "casino",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ]
+}

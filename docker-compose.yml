@@ -1,0 +1,70 @@
+# Développement. Projet Docker nommé `casino` : conteneurs, réseau et volumes `casino_*`.
+name: casino
+
+x-app: &app
+  build: { context: ., target: dev }
+  volumes:
+    - .:/repo
+    - /repo/node_modules
+    - /repo/backend/node_modules
+    - /repo/frontend/node_modules
+
+services:
+  # http://roulette.localhost:8090 (*.localhost pointe toujours sur la machine) → le front ;
+  # tableau de bord Traefik : http://traefik.roulette.localhost:8090. Port réglable dans .env (HTTP_PORT).
+  traefik:
+    image: traefik:v3.7.10
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.constraints=Label(`com.docker.compose.project`,`casino`)
+      - --entrypoints.web.address=:80
+      - --api.dashboard=true
+    ports:
+      - "127.0.0.1:${HTTP_PORT:-8090}:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.casino-traefik.rule=Host(`traefik.roulette.localhost`)
+      - traefik.http.routers.casino-traefik.service=api@internal
+
+  db:
+    image: postgres:18.6
+    environment:
+      # Identifiants de dev en clair.
+      - POSTGRES_USER=casino
+      - POSTGRES_PASSWORD=casino
+      - POSTGRES_DB=casino
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U casino -d casino"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  # API (Nest) : portefeuille et tirages. Joignable seulement par le front (/api), pas par Traefik.
+  backend:
+    <<: *app
+    working_dir: /repo/backend
+    command: sh -c "npm run db:migrate && npm run start:dev"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://casino:casino@db:5432/casino
+
+  # Seul point d'entrée : l'API est servie par le front sous /api (une seule origine, ni CORS ni cookie tiers).
+  frontend:
+    <<: *app
+    working_dir: /repo/frontend
+    command: npm run dev -- --host 0.0.0.0
+    depends_on: [backend]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.casino.rule=Host(`roulette.localhost`)
+      - traefik.http.services.casino.loadbalancer.server.port=3000
+
+volumes:
+  db-data:
