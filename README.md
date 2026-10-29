@@ -45,3 +45,20 @@ Un espace de travail npm, une image Docker, comme Forrest Dump :
 
 Nouvelle table en base : modifier un `*.table.ts`, puis `docker compose exec backend npm run db:generate` ; la migration
 s'applique au prochain démarrage de l'API.
+
+## Production
+
+En ligne sur https://roulette.natolive.fr, sur le même serveur Docker que Patrimo.
+
+- **CI** (`.github/workflows/ci.yml`) : à chaque push et PR, migrations sur une vraie base Postgres, tests, typecheck du
+  front et construction de l'image de prod. Une modification qui ne touche que la doc (`*.md`) ne la lance pas.
+- **Image** : sur `main`, publiée sur GHCR (`ghcr.io/natolive/roulette:<sha du commit>`), les 10 dernières gardées. Elle
+  ne contient que le front et le back compilés et les dépendances d'exécution du back.
+- **Déploiement** : push sur `main` avec tests et image au vert → GitHub se connecte au serveur avec une clé qui ne peut
+  lancer que `/srv/roulette/deploy.sh <sha>` (met le dépôt sur ce commit, tire l'image puis
+  `docker compose -f compose.prod.yml up -d`). Les migrations s'appliquent au démarrage de l'API, puis la CI vérifie
+  `https://roulette.natolive.fr/api/health` depuis l'extérieur. Revenir à une version : relancer le job « deploy » de son
+  exécution dans l'onglet Actions, ou `/srv/roulette/deploy.sh <sha>` sur le serveur.
+- **Sur le serveur** : stack `compose.prod.yml` dans `/srv/roulette/repo`, mot de passe Postgres et tag d'image dans son
+  `.env` (non versionné). HTTPS par Caddy (`/srv/caddy`, commun à tous les projets), qui joint le front (`roulette`) sur
+  le réseau Docker `proxy` ; l'API passe par le front (`/api`), la base n'est pas exposée.

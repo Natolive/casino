@@ -1,0 +1,69 @@
+# Production (serveur) : lancé par /srv/roulette/deploy.sh après chaque push sur main.
+# Caddy (stack à part, /srv/caddy) sert https://roulette.natolive.fr et joint le front via le réseau externe `proxy`.
+# Seul le front (`roulette`) rejoint `proxy` : les noms de service y sont partagés entre projets.
+# `.env` à côté de ce fichier (non versionné) : POSTGRES_PASSWORD, IMAGE_TAG.
+name: casino
+
+# Image construite par la CI (GHCR) ; IMAGE_TAG (sha du commit déployé) est écrit dans `.env` par deploy.sh.
+x-app: &app
+  image: ghcr.io/natolive/roulette:${IMAGE_TAG:?IMAGE_TAG manquant dans .env}
+  restart: unless-stopped
+  environment: &env
+    NODE_ENV: production
+
+services:
+  db:
+    image: postgres:18.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: casino
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: casino
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U casino -d casino"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Nom `backend` : le proxy /api du front y est figé au build (nuxt.config.ts). Hors du réseau `proxy`.
+  backend:
+    <<: *app
+    working_dir: /repo/backend
+    # Migrations par drizzle-orm (drizzle-kit, outil de dev, n'est pas dans l'image).
+    command: sh -c "node dist/src/migrate.js && exec node dist/src/main.js"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *env
+      DATABASE_URL: postgres://casino:${POSTGRES_PASSWORD}@db:5432/casino
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+
+  roulette:
+    <<: *app
+    working_dir: /repo/frontend
+    command: node .output/server/index.mjs
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    networks: [default, proxy]
+
+volumes:
+  db-data:
+
+networks:
+  proxy:
+    external: true

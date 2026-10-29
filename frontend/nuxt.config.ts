@@ -29,5 +29,6 @@ export default defineNuxtConfig({
     ],
   },
   // L'API passe par le front sous /api : une seule origine, ni CORS ni cookie tiers.
+  // @ts-expect-error -- ponytail: `proxy` marche (Nitro) mais manque au type de Nuxt 4.5 ; à retirer quand le typecheck s'en plaint.
   routeRules: { '/api/**': { proxy: `${process.env.API_URL ?? 'http://backend:3000'}/**` } },
 })
