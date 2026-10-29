@@ -19,7 +19,8 @@ const best = computed(() => {
       {{ seats.length }}/{{ MAX_SEATS }} à la table<template v-if="spectators"> · {{ spectators }} {{ spectators > 1 ? 'spectateurs' : 'spectateur' }}</template>
     </p>
     <p v-if="seat === null && seats.length" class="rounded-full bg-black/55 px-3 py-1 text-xs text-white/70 backdrop-blur">
-      Table pleine : vous misez en spectateur, une place se libère bientôt.
+      <template v-if="seats.length < MAX_SEATS">Place libérée après quelques tours sans miser : misez pour la reprendre.</template>
+      <template v-else>Table pleine : vous misez en spectateur, une place se libère bientôt.</template>
     </p>
     <TransitionGroup tag="ul" name="seat" class="flex flex-col items-start gap-1">
       <li

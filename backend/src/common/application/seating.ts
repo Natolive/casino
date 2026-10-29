@@ -3,7 +3,10 @@
 // Placement automatique (`auto`, la roulette) : une place par joueur, donnée à l'arrivée ; table pleine, les suivants
 // regardent et montent à table, par ordre d'arrivée, dès qu'une place se libère. Sinon (le blackjack), on arrive en
 // spectateur et on choisit ses places (`sit`, `stand`).
-type Present = { player: number; seats: number[]; name: string; connections: number };
+// Anti-AFK : AFK_ROUNDS tours de suite sans jouer (`played`), le joueur libère ses places et regarde ; à la roulette, il ne
+// remonte à table qu'en misant de nouveau (ou en revenant).
+export const AFK_ROUNDS = 3;
+type Present = { player: number; seats: number[]; name: string; connections: number; idle: number; played: boolean; away: boolean };
 
 export class Seating {
   private readonly present = new Map<string, Present>();
@@ -18,6 +21,7 @@ export class Seating {
   join(id: string, name: string): number {
     const present = this.present.get(id) ?? this.arrive(id, name);
     present.connections++;
+    present.away = false;
     this.fill();
     return present.player;
   }
@@ -36,10 +40,30 @@ export class Seating {
     this.fill();
   }
 
+  // Le joueur a joué ce tour-ci (mise, coup, place prise) : il n'est pas AFK.
+  played(id: string) {
+    const present = this.present.get(id);
+    if (!present) return;
+    Object.assign(present, { played: true, away: false });
+    this.fill();
+  }
+
+  // Fin d'un tour de mises : qui est resté AFK_ROUNDS tours assis sans jouer libère ses places.
+  round() {
+    for (const p of this.present.values()) {
+      p.idle = p.played || !p.seats.length ? 0 : p.idle + 1;
+      p.played = false;
+      if (p.idle >= AFK_ROUNDS) Object.assign(p, { seats: [], idle: 0, away: true });
+    }
+    this.fill();
+  }
+
   // Prend une place libre (le joueur arrive à la table s'il n'y était pas encore) ; rend false si elle est prise.
   sit(id: string, name: string, seat: number) {
     if (seat < 1 || seat > this.size || this.ownerOf(seat)) return false;
-    (this.present.get(id) ?? this.arrive(id, name)).seats.push(seat);
+    const present = this.present.get(id) ?? this.arrive(id, name);
+    present.seats.push(seat);
+    present.played = true;
     return true;
   }
 
@@ -68,7 +92,7 @@ export class Seating {
   }
 
   private arrive(id: string, name: string) {
-    const present: Present = { player: ++this.arrivals, seats: [], name, connections: 0 };
+    const present: Present = { player: ++this.arrivals, seats: [], name, connections: 0, idle: 0, played: false, away: false };
     this.present.set(id, present);
     return present;
   }
@@ -77,6 +101,6 @@ export class Seating {
     if (!this.auto) return;
     const taken = new Set([...this.present.values()].flatMap((p) => p.seats));
     const free = Array.from({ length: this.size }, (_, i) => i + 1).filter((n) => !taken.has(n));
-    for (const p of this.present.values()) if (!p.seats.length && free.length) p.seats.push(free.shift()!);
+    for (const p of this.present.values()) if (!p.seats.length && !p.away && free.length) p.seats.push(free.shift()!);
   }
 }

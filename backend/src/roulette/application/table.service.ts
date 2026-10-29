@@ -68,6 +68,7 @@ export class TableService implements OnApplicationBootstrap, OnApplicationShutdo
       const result = resultOf(seed);
       await this.rounds.settle(id, result, seed);
       if (this.stopped) return;
+      this.seating.round();
       this.round = { id, phase: 'spinning', endsAt: Date.now() + SPINNING_MS, result, hash: this.round!.hash, seed };
       this.timer = setTimeout(() => void this.open(), SPINNING_MS);
       this.publish();
@@ -145,6 +146,7 @@ export class TableService implements OnApplicationBootstrap, OnApplicationShutdo
     const balance = await this.rounds.placeBets(round, playerId, bets);
     if (balance === 'closed') throw new RoundClosedError();
     if (balance === 'funds') throw new InsufficientFundsError();
+    this.seating.played(playerId);
     this.publishSeats();
     return balance;
   }

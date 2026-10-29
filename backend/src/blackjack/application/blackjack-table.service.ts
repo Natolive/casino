@@ -125,6 +125,7 @@ export class BlackjackTableService implements OnApplicationBootstrap, OnApplicat
 
   // Rien ne va plus : les mises du tour, lues en base, prennent leur case, et la donne commence.
   private async deal() {
+    this.seating.round();
     // Personne n'a misé : la table attend, mises toujours ouvertes.
     if (!this.stakes.size) return this.betting();
     const bets = await this.rounds.close(this.round);
@@ -193,6 +194,7 @@ export class BlackjackTableService implements OnApplicationBootstrap, OnApplicat
       const balance = await this.rounds.placeBet(round, playerId, seat, amount);
       if (balance === 'closed') throw new RoundClosedError();
       if (balance === 'funds') throw new InsufficientFundsError();
+      this.seating.played(playerId);
       if (amount) this.stakes.set(seat, { playerId, amount });
       else this.stakes.delete(seat);
       this.publish();
@@ -234,6 +236,7 @@ export class BlackjackTableService implements OnApplicationBootstrap, OnApplicat
       if (round !== this.round || this.phase !== 'playing' || !game?.turn) throw new NotYourTurnError();
       if (this.owners.get(game.boxes[game.turn.box]!.seat)?.playerId !== playerId) throw new NotYourTurnError();
       if (!legalMoves(game).includes(move)) throw new IllegalMoveError();
+      this.seating.played(playerId);
       const cost = costOf(game, move);
       if (cost && (await this.rounds.raise(round, game.boxes[game.turn.box]!.seat, playerId, cost)) === 'funds') throw new InsufficientFundsError();
       this.play(move);

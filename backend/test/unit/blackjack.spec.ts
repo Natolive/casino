@@ -1,5 +1,5 @@
 import { begin, blackjackBetSchema, dealerDraws, dealNext, handValue, isNatural, legalMoves, newGame, newShoe, payoutOf, play, replay, shoeOf, shoeSeed, type Card } from '@casino/shared';
-import { Seating } from '../../src/common/application/seating.js';
+import { AFK_ROUNDS, Seating } from '../../src/common/application/seating.js';
 import { BlackjackTableService } from '../../src/blackjack/application/blackjack-table.service.js';
 import type { BlackjackRoundRepository } from '../../src/blackjack/domain/blackjack-round.repository.js';
 
@@ -106,6 +106,37 @@ describe('places au blackjack', () => {
     seating.leave('ana');
     seating.update(new Map());
     expect(seating.ownerOf(5)).toBeNull();
+  });
+});
+
+describe('anti-AFK', () => {
+  it(`${AFK_ROUNDS} tours assis sans jouer : les places se libèrent`, () => {
+    const seating = new Seating(7, false);
+    seating.join('ana', 'Ana');
+    seating.join('bob', 'Bob');
+    seating.sit('ana', 'Ana', 1);
+    seating.sit('bob', 'Bob', 2);
+    // S'asseoir compte pour le tour en cours.
+    seating.round();
+    for (let i = 0; i < AFK_ROUNDS; i++) {
+      seating.played('bob');
+      seating.round();
+    }
+    expect(seating.seated().map((s) => s.name)).toEqual(['Bob']);
+  });
+
+  it('à la roulette, le joueur AFK cède sa place et ne la reprend qu’en misant', () => {
+    const seating = new Seating(1);
+    seating.join('ana', 'Ana');
+    seating.join('bob', 'Bob');
+    for (let i = 0; i < AFK_ROUNDS; i++) seating.round();
+    expect(seating.seated().map((s) => s.name)).toEqual(['Bob']);
+    // Bob s'en va : la place est libre, mais Ana ne la reprend pas sans miser.
+    seating.leave('bob');
+    seating.update(new Map());
+    expect(seating.seated()).toEqual([]);
+    seating.played('ana');
+    expect(seating.seated().map((s) => s.name)).toEqual(['Ana']);
   });
 });
 
