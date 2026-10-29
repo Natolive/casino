@@ -24,7 +24,7 @@ watch(
 
 <template>
   <div class="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
-    <RouletteHeader :balance="available" />
+    <AppHeader title="Roulette" :balance="available" />
 
     <main class="stage relative flex flex-1 flex-col gap-4 px-3 pb-4 sm:px-6 xl:block xl:min-h-0 xl:p-0" :class="{ open }">
       <RouletteAnnounce v-if="call && round" :key="`${round.id}-${call}`" :text="call" :tone="open ? 'go' : 'stop'" />

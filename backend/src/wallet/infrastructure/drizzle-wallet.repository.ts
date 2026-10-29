@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import type { LeaderboardEntryDto } from '@casino/shared';
+import { count, desc, eq, gt, sql } from 'drizzle-orm';
 import { DB, type Database } from '../../common/infrastructure/database/database.module.js';
 import { WalletRepository } from '../domain/wallet.repository.js';
 import { players } from './player.table.js';
@@ -20,5 +21,24 @@ export class DrizzleWalletRepository implements WalletRepository {
       .where(eq(players.id, playerId))
       .returning({ balance: players.balance });
     return player!.balance;
+  }
+
+  async richest(limit: number, playerId: string): Promise<LeaderboardEntryDto[]> {
+    // Prénom et initiale du nom : le classement est vu par tous les joueurs.
+    return this.db
+      .select({
+        rank: sql<number>`rank() over (order by ${players.balance} desc)::int`,
+        name: sql<string>`${players.firstName} || ' ' || left(${players.lastName}, 1) || '.'`,
+        you: sql<boolean>`${players.id} = ${playerId}`,
+        balance: players.balance,
+      })
+      .from(players)
+      .orderBy(desc(players.balance), players.createdAt)
+      .limit(limit);
+  }
+
+  async countRicherThan(balance: number): Promise<number> {
+    const [row] = await this.db.select({ n: count() }).from(players).where(gt(players.balance, balance));
+    return row!.n;
   }
 }

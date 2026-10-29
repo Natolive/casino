@@ -1,12 +1,14 @@
 <script setup lang="ts">
-// Barre du haut de la table : retour aux tables, compte, son, et le solde qui défile jusqu'à sa nouvelle valeur.
-const props = defineProps<{ balance: number }>()
+// Barre du haut de chaque page : retour aux tables, enseigne, compte ; sur une table, le son et le solde qui défile
+// jusqu'à sa nouvelle valeur.
+const props = defineProps<{ title: string; balance?: number }>()
 
-const displayed = ref(props.balance)
+const displayed = ref(props.balance ?? 0)
 let frame = 0
 watch(
   () => props.balance,
   (to) => {
+    if (to == null) return
     cancelAnimationFrame(frame)
     const from = displayed.value
     const start = performance.now()
@@ -34,20 +36,21 @@ function toggleSound() {
     <h1 class="font-display flex items-center gap-3 text-sm font-semibold tracking-[.45em] text-[#f4efe3] uppercase sm:gap-4 sm:text-lg">
       <span class="hidden h-px w-12 bg-gradient-to-r from-transparent to-amber-200/50 sm:block" />
       <span class="text-[.5em] text-amber-200/80">◆</span>
-      <span class="-me-[.45em]">Roulette</span>
+      <span class="-me-[.45em]">{{ title }}</span>
       <span class="text-[.5em] text-amber-200/80">◆</span>
       <span class="hidden h-px w-12 bg-gradient-to-l from-transparent to-amber-200/50 sm:block" />
     </h1>
     <div class="flex items-center gap-1 justify-self-end sm:gap-2">
       <AccountMenu />
       <UButton
+        v-if="balance != null"
         variant="ghost"
         color="neutral"
         :icon="muted ? 'i-lucide-volume-x' : 'i-lucide-volume-2'"
         :aria-label="muted ? 'Remettre le son' : 'Couper le son'"
         @click="toggleSound"
       />
-      <div class="panel flex items-center gap-2 rounded-full py-1.5 ps-2 pe-4">
+      <div v-if="balance != null" class="panel flex items-center gap-2 rounded-full py-1.5 ps-2 pe-4">
         <span class="grid size-7 place-items-center rounded-full bg-emerald-400 text-emerald-950"><UIcon name="i-lucide-coins" class="size-4" /></span>
         <span class="font-display text-lg font-bold tabular-nums">{{ fmtChips(displayed) }}</span>
       </div>
