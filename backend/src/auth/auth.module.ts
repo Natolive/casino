@@ -16,5 +16,6 @@ import { AuthGuard } from './infrastructure/http/auth.guard.js';
     { provide: UserRepository, useClass: DrizzleUserRepository },
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}

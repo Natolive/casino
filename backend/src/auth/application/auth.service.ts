@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { STARTING_BALANCE, type LoginDto, type RegisterDto, type UserDto } from '@casino/shared';
 import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
+import { Subject } from 'rxjs';
 import { EmailTakenError, InvalidCredentialsError } from '../domain/auth.errors.js';
 import { UserRepository } from '../domain/user.repository.js';
 
@@ -40,8 +41,12 @@ export class AuthService {
     return { user, token: await this.openSession(user.id) };
   }
 
-  logout(token: string): Promise<void> {
-    return this.users.closeSession(sessionIdOf(token));
+  // Sessions fermées : ce qui reste ouvert avec elles (la table en direct) se ferme aussi.
+  readonly loggedOut = new Subject<string>();
+
+  async logout(token: string): Promise<void> {
+    await this.users.closeSession(sessionIdOf(token));
+    this.loggedOut.next(token);
   }
 
   userOf(token: string): Promise<UserDto | null> {

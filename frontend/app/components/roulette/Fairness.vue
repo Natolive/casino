@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { RoundDto } from '@casino/shared'
+import type { TableRoundDto } from '@casino/shared'
 
 // Tirage vérifiable : hash publié avant les mises, graine révélée au tirage et recalculée dans le navigateur. Abrégés,
 // complets au survol.
-defineProps<{ round: RoundDto; verified: boolean | null }>()
+defineProps<{ round: TableRoundDto; verified: boolean | null }>()
 const short = (s: string) => `${s.slice(0, 8)}…${s.slice(-6)}`
 </script>
 

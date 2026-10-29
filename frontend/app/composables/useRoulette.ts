@@ -1,4 +1,4 @@
-import { BETS, BETTING_MS, HISTORY_SIZE, MAX_BET, SPINNING_MS, payout, resultOf, type RoundDto, type WalletDto } from '@casino/shared'
+import { BETS, BETTING_MS, HISTORY_SIZE, MAX_BET, SPINNING_MS, payout, resultOf, type PlacedBet, type RoundDto, type SeatDto, type TableEvent, type TableRoundDto, type WalletDto } from '@casino/shared'
 
 type Bets = Record<string, number>
 export type Phase = 'betting' | 'spinning' | 'result'
@@ -6,6 +6,8 @@ export type Outcome = { result: number; staked: number; won: number }
 
 const total = (bets: Bets) => Object.values(bets).reduce((a, b) => a + b, 0)
 const toList = (bets: Bets) => Object.entries(bets).map(([bet, amount]) => ({ bet, amount }))
+// Ordre des états de la table : tour après tour, les mises puis le tirage.
+const order = (r: TableRoundDto) => r.id * 2 + (r.phase === 'spinning' ? 1 : 0)
 const toBets = (list: RoundDto['bets']): Bets => Object.fromEntries(list.map((b) => [b.bet, b.amount]))
 
 async function sha256(text: string) {
@@ -13,9 +15,9 @@ async function sha256(text: string) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-// État de la table vue par ce joueur. Le croupier (l'API) mène les tours pour tout le monde : on relit le tour à chaque
-// fin de phase, les jetons posés partent à l'API au fil de l'eau (débités tout de suite), et la roue montre le numéro
-// quand les jeux sont faits. `roll` lance la bille sur un numéro et se résout quand elle est tombée.
+// État de la table vue par ce joueur. Le croupier (l'API) mène les tours pour tout le monde et les pousse en direct par
+// WebSocket, avec les joueurs autour de la table et leurs mises ; les jetons posés partent à l'API au fil de l'eau
+// (débités tout de suite), et la roue montre le numéro quand les jeux sont faits. `roll` lance la bille sur un numéro et se résout quand elle est tombée.
 export function useRoulette(roll: (n: number) => Promise<void>) {
   const api = useApi()
   const toast = useToast()
@@ -28,7 +30,13 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   const bets = ref<Bets>({})
   const chip = ref(10)
   const phase = ref<Phase>('spinning')
-  const round = ref<RoundDto | null>(null)
+  const round = ref<TableRoundDto | null>(null)
+  // Les joueurs assis (soi compris, si on a une place) et le nombre de spectateurs.
+  const seats = ref<SeatDto[]>([])
+  const spectators = ref(0)
+  const player = ref<number | null>(null)
+  // Sa place à la table ; null : spectateur, en attendant qu'une place se libère.
+  const seat = computed(() => seats.value.find((s) => s.player === player.value)?.seat ?? null)
   const outcome = ref<Outcome | null>(null)
   // Le tirage révélé correspond-il au hash publié avant les mises ? null : pas encore révélé (ou navigateur sans WebCrypto).
   const verified = ref<boolean | null>(null)
@@ -58,10 +66,20 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   // Le tapis accepte des jetons : phase de mises et compte à rebours pas encore à zéro.
   const open = computed(() => phase.value === 'betting' && remaining.value > 0)
 
-  let polling: ReturnType<typeof setTimeout> | undefined
+  // Les mises des autres joueurs, à poser sur le tapis à côté des siennes.
+  const others = computed(() =>
+    seats.value.filter((s) => s.player !== player.value).flatMap((s) => s.bets.map((b) => ({ key: b.bet, amount: b.amount, seat: s.seat }))),
+  )
+
+  let socket: WebSocket | undefined
+  let reconnecting: ReturnType<typeof setTimeout> | undefined
+  let retries = 0
+  let disposed = false
   onScopeDispose(() => {
+    disposed = true
+    socket?.close()
     clearInterval(clock)
-    clearTimeout(polling)
+    clearTimeout(reconnecting)
     clearTimeout(syncing)
   })
 
@@ -75,32 +93,35 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
     balance.value = wallet.balance
     if (current) apply(current)
     if (current?.phase === 'betting') balance.value += total(bets.value)
-    schedule(current)
+    connect()
   }
 
-  // Relit le tour juste après la fin de la phase en cours ; toutes les 2 s si l'API ne répond pas ou si le tour a déjà
-  // expiré sans suite (croupier bloqué, base indisponible).
-  function schedule(current: RoundDto | null) {
-    clearTimeout(polling)
-    const left = current ? current.endsAt - current.now : 0
-    polling = setTimeout(poll, left > 0 ? left + 300 : 2000)
-  }
-
-  async function poll() {
-    let current: RoundDto | null = null
-    try {
-      current = await api<RoundDto | null>('/roulette/round')
-      if (current) apply(current)
-    } catch {
-      // API injoignable (redémarrage) : on réessaie un peu plus tard.
-    } finally {
-      schedule(current)
+  // La table en direct. Coupée (réseau, API redémarrée) : on se reconnecte de plus en plus lentement, avec un peu de
+  // hasard pour que toute la salle ne revienne pas d'un coup ; à la reconnexion, le croupier renvoie le tour en cours.
+  function connect() {
+    socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/roulette`)
+    socket.onopen = () => (retries = 0)
+    socket.onmessage = (e) => {
+      const event = JSON.parse(e.data) as TableEvent
+      if (event.type === 'you') player.value = event.player
+      else if (event.type === 'seats') ({ seats: seats.value, spectators: spectators.value } = event)
+      else apply(event.round)
+    }
+    socket.onclose = (e) => {
+      if (disposed) return
+      // 44xx : refus du croupier (session fermée, trop d'onglets), inutile d'insister ; on dit pourquoi la table s'arrête.
+      if (e.code >= 4400 && e.code < 4500)
+        return void toast.add({ title: e.reason || 'La table s’est déconnectée.', description: 'Rechargez la page pour revenir.', color: 'error', icon: 'i-lucide-unplug', duration: 0 })
+      reconnecting = setTimeout(connect, Math.min(1000 * 2 ** retries++, 15_000) * (0.5 + Math.random()))
     }
   }
 
-  function apply(next: RoundDto) {
-    offset = next.now - Date.now()
+  // Le tour poussé à tous ne porte pas les mises du joueur : seul celui envoyé à la connexion (ou relu) les a.
+  function apply(next: TableRoundDto & { bets?: PlacedBet[] }) {
     const previous = round.value
+    // Arrivé après plus récent (le tour envoyé à la connexion croise un changement de phase) : ignoré.
+    if (previous && order(next) < order(previous)) return
+    offset = next.now - Date.now()
     round.value = next
     if (next.phase === 'betting') {
       if (previous?.id === next.id) return
@@ -110,7 +131,9 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
       verified.value = null
       settled.value = {}
       undoStack.value = []
-      bets.value = synced = toBets(next.bets)
+      bets.value = synced = toBets(next.bets ?? [])
+      // Les jetons des autres du tour passé s'en vont avec les siens, sans attendre les places à jour.
+      seats.value = seats.value.map((s) => ({ ...s, bets: [], won: null }))
       // Tirage du tour précédent jamais vu (onglet en veille, API redémarrée) : solde et historique relus.
       if (previous?.phase === 'betting') void resync()
     } else if (previous?.id === next.id && previous.phase === 'betting') {
@@ -135,7 +158,7 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   }
 
   // Rien ne va plus : la bille tombe sur le numéro tiré, puis le tapis montre ce qui est gagné.
-  async function reveal(r: RoundDto) {
+  async function reveal(r: TableRoundDto) {
     clearTimeout(syncing)
     phase.value = 'spinning'
     void sha256(r.seed!)
@@ -267,5 +290,5 @@ export function useRoulette(roll: (n: number) => Promise<void>) {
   // Une mise est gagnante si le numéro sorti est l'un des siens.
   const wins = (key: string) => outcome.value !== null && BETS[key]!.includes(outcome.value.result)
 
-  return { balance, history, historyKey, chip, open, phase, round, remaining, timer, verified, outcome, winner, staked, available, shown, lastBets, undoStack, load, place, announce, move, remove, clear, double, rebet, undo, refill, wins }
+  return { balance, history, historyKey, chip, open, phase, round, seats, spectators, seat, others, remaining, timer, verified, outcome, winner, staked, available, shown, lastBets, undoStack, load, place, announce, move, remove, clear, double, rebet, undo, refill, wins }
 }

@@ -30,7 +30,14 @@ function toggleSound() {
 <template>
   <header class="flex items-center justify-between gap-2 px-3 py-3 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-8">
     <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-chevron-left" aria-label="Tables" class="justify-self-start"><span class="hidden sm:inline">Tables</span></UButton>
-    <h1 class="font-display brand-text text-xl font-bold tracking-tight sm:text-3xl">Roulette</h1>
+    <!-- Enseigne de la table : capitales espacées, ivoire, entre deux filets dorés. -->
+    <h1 class="font-display flex items-center gap-3 text-sm font-semibold tracking-[.45em] text-[#f4efe3] uppercase sm:gap-4 sm:text-lg">
+      <span class="hidden h-px w-12 bg-gradient-to-r from-transparent to-amber-200/50 sm:block" />
+      <span class="text-[.5em] text-amber-200/80">◆</span>
+      <span class="-me-[.45em]">Roulette</span>
+      <span class="text-[.5em] text-amber-200/80">◆</span>
+      <span class="hidden h-px w-12 bg-gradient-to-l from-transparent to-amber-200/50 sm:block" />
+    </h1>
     <div class="flex items-center gap-1 justify-self-end sm:gap-2">
       <AccountMenu />
       <UButton

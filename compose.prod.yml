@@ -1,6 +1,9 @@
 # Production (serveur) : lancé par /srv/casino/deploy.sh après chaque push sur main.
 # Caddy (stack à part, /srv/caddy) sert https://casino.natolive.fr et joint le front via le réseau externe `proxy`.
 # Seul le front (`casino`) rejoint `proxy` : les noms de service y sont partagés entre projets.
+# La table en direct (WebSocket sous /ws/) va droit à l'API : Caddy la joint sur le réseau `casino_ws` (le sien, hors de
+# `proxy`), sous le nom `casino-api`. Côté Caddy : réseau externe `casino_ws` et `handle /ws/* { reverse_proxy casino-api:3000 }`
+# avant le reste du site.
 # `.env` à côté de ce fichier (non versionné) : POSTGRES_PASSWORD, IMAGE_TAG.
 name: casino
 
@@ -29,6 +32,10 @@ services:
 
   # Nom `backend` : le proxy /api du front y est figé au build (nuxt.config.ts). Hors du réseau `proxy`.
   backend:
+    networks:
+      default:
+      ws:
+        aliases: [casino-api]
     <<: *app
     working_dir: /repo/backend
     # Migrations par drizzle-orm (drizzle-kit, outil de dev, n'est pas dans l'image).
@@ -66,4 +73,8 @@ volumes:
 
 networks:
   proxy:
+    external: true
+  # Partagé avec Caddy seul, pour la table en direct ; créé une fois sur le serveur (`docker network create casino_ws`).
+  ws:
+    name: casino_ws
     external: true

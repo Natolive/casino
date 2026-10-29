@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { BETS } from '@casino/shared'
+import { BETS, MAX_SEATS } from '@casino/shared'
+import type { OtherBet } from './Bets.vue'
 import { CH, CW, LABELS, SPOTS, TABLE_H, TABLE_W, ZERO, cellOf, centerOf } from '~/utils/table-layout'
 
 // Le tapis de jeu : clic pour poser le jeton choisi, clic droit pour retirer la mise d'une case, glisser une pile pour la
 // déplacer (lâchée hors du tapis, elle est retirée ; dans un creux du tapis, elle reste où elle était). Survoler une zone éclaire les numéros qu'elle couvre (cheval, carré, sixain…).
 // `ghost` : tapis en transparence (aperçu sur la roue), seuls les numéros et les jetons restent pleins.
-const props = defineProps<{ bets: Record<string, number>; winner?: number | null; locked: boolean; wins?: (key: string) => boolean; ghost?: boolean }>()
+// `others` : les mises des autres joueurs, en petits jetons à leur couleur, autour du centre de la case.
+const props = defineProps<{ bets: Record<string, number>; winner?: number | null; locked: boolean; wins?: (key: string) => boolean; ghost?: boolean; others?: OtherBet[] }>()
 const emit = defineEmits<{ place: [key: string]; remove: [key: string]; move: [from: string, to: string] }>()
 
 const hovered = ref<string | null>(null)
@@ -53,6 +55,16 @@ const chips = computed(() =>
   Object.entries(props.bets).map(([key, amount]) => {
     const d = drag.value?.key === key && drag.value.moved ? drag.value : null
     return { key, amount, ...(d ? { x: d.x, y: d.y } : centerOf(key)), dragging: !!d }
+  }),
+)
+
+// Chaque place a son coin autour du centre de la case, hors de la pile du joueur (rayon 19) : les jetons des autres
+// restent visibles même sous les siens.
+const othersChips = computed(() =>
+  (props.others ?? []).map((o) => {
+    const { x, y } = centerOf(o.key)
+    const angle = ((o.seat - 1) / MAX_SEATS) * 2 * Math.PI - Math.PI / 4
+    return { ...o, x: x + Math.cos(angle) * 24, y: y + Math.sin(angle) * 24, color: seatColor(o.seat) }
   }),
 )
 
@@ -148,6 +160,15 @@ const winnerCell = computed(() => (props.winner == null ? null : props.winner ==
         @click="emit('place', s.key)"
         @contextmenu.prevent="emit('remove', s.key)"
       />
+    </g>
+
+    <!-- Jetons des autres joueurs, sous les siens. -->
+    <g class="pointer-events-none" filter="url(#chip-shadow)">
+      <TransitionGroup name="chip">
+        <g v-for="o in othersChips" :key="`${o.seat}-${o.key}`" :class="{ lost: winner != null && !BETS[o.key]!.includes(winner) }" class="chip">
+          <circle :cx="o.x" :cy="o.y" r="9" :fill="o.color" stroke="#fff" stroke-opacity=".7" stroke-width="2" stroke-dasharray="3 3" />
+        </g>
+      </TransitionGroup>
     </g>
 
     <!-- Jetons posés, à glisser pendant les mises : les perdants s'effacent après le tour. -->

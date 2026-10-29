@@ -44,7 +44,8 @@ services:
       timeout: 5s
       retries: 15
 
-  # API (Nest) : portefeuille et tirages. Joignable seulement par le front (/api), pas par Traefik.
+  # API (Nest) : portefeuille et tirages. Joignable par le front (/api) ; Traefik ne lui passe que la table en direct
+  # (WebSocket sous /ws/, même hôte que le front).
   backend:
     <<: *app
     working_dir: /repo/backend
@@ -54,6 +55,10 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://casino:casino@db:5432/casino
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.casino-ws.rule=Host(`casino.localhost`) && PathPrefix(`/ws/`)
+      - traefik.http.services.casino-ws.loadbalancer.server.port=3000
 
   # Seul point d'entrée : l'API est servie par le front sous /api (une seule origine, ni CORS ni cookie tiers).
   frontend:

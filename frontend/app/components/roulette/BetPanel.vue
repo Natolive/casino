@@ -8,7 +8,7 @@ const props = defineProps<{ game: ReturnType<typeof useRoulette> }>()
 const view = defineModel<BetsView>('view', { required: true })
 
 // Les refs du jeu, lues telles quelles dans le gabarit.
-const { open, history, historyKey, chip, remaining, timer, staked, available, shown, lastBets, undoStack } = props.game
+const { open, history, historyKey, chip, remaining, timer, staked, available, shown, lastBets, undoStack, others } = props.game
 const game = props.game
 
 const VIEWS = [
@@ -23,8 +23,8 @@ const broke = computed(() => available.value < CHIPS[0] && !staked.value)
     <div class="flex items-center gap-4" role="timer">
       <RouletteCountdown :timer="timer" :remaining="remaining" />
       <div class="min-w-0">
-        <p class="font-display brand-text text-3xl font-bold tracking-tight">Faites vos jeux</p>
-        <p class="text-muted text-sm">Mises ouvertes, encore {{ remaining }}&nbsp;s</p>
+        <p class="text-[11px] font-bold tracking-[.25em] text-emerald-300/80 uppercase">Mises ouvertes</p>
+        <p class="font-display text-3xl font-semibold tracking-tight text-[#f4efe3]">Faites vos jeux</p>
       </div>
     </div>
 
@@ -34,7 +34,7 @@ const broke = computed(() => available.value < CHIPS[0] && !staked.value)
 
     <div class="-mx-3 overflow-x-auto px-3 sm:mx-0 sm:px-0">
       <div class="panel min-w-[636px] rounded-3xl p-2">
-        <RouletteBets :view="view" :bets="shown" :locked="!open" @place="game.place" @remove="game.remove" @move="game.move" @announce="game.announce" />
+        <RouletteBets :view="view" :bets="shown" :others="others" :locked="!open" @place="game.place" @remove="game.remove" @move="game.move" @announce="game.announce" />
       </div>
     </div>
     <p v-if="view === 'table'" class="text-dimmed -mt-2 text-xs">Clic&nbsp;: poser un jeton (sur un filet ou un coin pour miser à cheval) · clic droit&nbsp;: retirer · glisser une pile&nbsp;: la déplacer, ou la sortir du tapis.</p>

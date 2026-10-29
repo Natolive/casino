@@ -1,5 +1,8 @@
 import type { PlacedBet } from '@casino/shared';
 
+// Les mises d'un joueur sur un tour, avec son prénom (pour les autres joueurs de la table).
+export type PlayerBets = { playerId: string; name: string; bets: PlacedBet[]; won: number | null };
+
 export abstract class RoundRepository {
   // Ouvre un nouveau tour et rend son numéro.
   abstract open(hash: string): Promise<number>;
@@ -11,6 +14,8 @@ export abstract class RoundRepository {
   // Tours restés ouverts (serveur arrêté pendant les mises) : mises rendues, tours supprimés.
   abstract refundOpen(): Promise<void>;
   abstract betsOf(roundId: number, playerId: string): Promise<PlacedBet[]>;
+  // Les mises de tous les joueurs sur un tour.
+  abstract betsAt(roundId: number): Promise<PlayerBets[]>;
   // Derniers numéros sortis à la table, le plus récent en premier.
   abstract lastResults(limit: number): Promise<number[]>;
 }

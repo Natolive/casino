@@ -30,8 +30,14 @@ Un espace de travail npm, une image Docker, comme Forrest Dump :
 - **Table automatique** (`backend/src/roulette/application/table.service.ts`) : le serveur mène les tours pour tous les
   joueurs, 25 s de mises puis 25 s de tirage (`BETTING_MS`, `SPINNING_MS` dans `shared`). Les jetons posés partent à l'API au
   fil de l'eau (`PUT /api/roulette/bets`) et sont débités tout de suite, par un `UPDATE` conditionnel : le solde ne passe
-  jamais sous zéro. Au tirage, les gagnants sont payés d'un bloc ; le navigateur relit le tour (`GET /api/roulette/round`)
-  à chaque fin de phase. Si l'API s'arrête pendant les mises, elle rend les mises du tour au redémarrage.
+  jamais sous zéro. Au tirage, les gagnants sont payés d'un bloc. Si l'API s'arrête pendant les mises, elle rend les mises
+  du tour au redémarrage.
+- **Table multijoueur en direct** (WebSocket `/ws/roulette`, `TableGateway`) : le serveur pousse les phases du tour, les
+  joueurs assis (prénom, place, couleur de jetons ; 8 places, les suivants en spectateurs) et leurs mises, à mesure. Rien n'est lu des joueurs par ce canal (les
+  mises restent sur l'API). Le proxy (Traefik en dev, Caddy en prod) envoie `/ws/` droit à l'API. Elle refuse les autres
+  origines dès la poignée de main, exige la session (et ferme le socket à la déconnexion), limite les messages à 1 Ko et
+  les onglets à 5 par joueur, pinge les connexions mortes et coupe les clients trop lents. Le navigateur se reconnecte
+  tout seul (attente croissante, sauf refus 44xx) et reçoit le tour à jour.
 - **Tirage vérifiable** : le numéro (`crypto.randomInt`) est tiré à l'ouverture du tour et seul `sha256("numéro:sel")` est
   publié. La graine est révélée au tirage ; le navigateur recalcule le hash et l'affiche, discrètement, sous le tapis.
 - **Comptes** (`backend/src/auth`) : email, prénom, nom et mot de passe (scrypt) ; connexion par email, session dans un cookie httpOnly (seul son sha256 est en
@@ -61,4 +67,5 @@ En ligne sur https://casino.natolive.fr, sur le même serveur Docker que Patrimo
   exécution dans l'onglet Actions, ou `/srv/casino/deploy.sh <sha>` sur le serveur.
 - **Sur le serveur** : stack `compose.prod.yml` dans `/srv/casino/repo`, mot de passe Postgres et tag d'image dans son
   `.env` (non versionné). HTTPS par Caddy (`/srv/caddy`, commun à tous les projets), qui joint le front (`casino`) sur
-  le réseau Docker `proxy` ; l'API passe par le front (`/api`), la base n'est pas exposée.
+  le réseau Docker `proxy` ; l'API passe par le front (`/api`), sauf la table en direct (`/ws/`) que Caddy envoie droit à
+  l'API par le réseau `casino_ws` (voir `compose.prod.yml`). La base n'est pas exposée.

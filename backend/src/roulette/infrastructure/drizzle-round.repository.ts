@@ -3,7 +3,7 @@ import { payout, type PlacedBet } from '@casino/shared';
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { DB, type Database } from '../../common/infrastructure/database/database.module.js';
 import { players } from '../../wallet/infrastructure/player.table.js';
-import { RoundRepository } from '../domain/round.repository.js';
+import { RoundRepository, type PlayerBets } from '../domain/round.repository.js';
 import { roundBets, rounds } from './spin.table.js';
 
 @Injectable()
@@ -86,6 +86,14 @@ export class DrizzleRoundRepository implements RoundRepository {
       .from(roundBets)
       .where(and(eq(roundBets.roundId, roundId), eq(roundBets.playerId, playerId)));
     return row?.bets ?? [];
+  }
+
+  betsAt(roundId: number): Promise<PlayerBets[]> {
+    return this.db
+      .select({ playerId: roundBets.playerId, name: players.firstName, bets: roundBets.bets, won: roundBets.won })
+      .from(roundBets)
+      .innerJoin(players, eq(players.id, roundBets.playerId))
+      .where(eq(roundBets.roundId, roundId));
   }
 
   async lastResults(limit: number): Promise<number[]> {

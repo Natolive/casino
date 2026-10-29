@@ -7,7 +7,7 @@ useHead({ title: 'Roulette' })
 
 const wheel = useTemplateRef('wheel')
 const game = useRoulette((n) => wheel.value!.spinTo(n))
-const { open, phase, round, remaining, verified, outcome, winner, available, shown, history, historyKey } = game
+const { open, phase, round, remaining, verified, outcome, winner, available, shown, history, historyKey, seats, spectators, seat, others } = game
 
 await game.load()
 
@@ -33,6 +33,8 @@ watch(
       <section class="wheel relative w-full" aria-label="Cylindre">
         <div class="absolute inset-0"><RouletteWheel ref="wheel" /></div>
 
+        <RouletteSeats :seats="seats" :spectators="spectators" :seat="seat" :result="phase === 'result'" class="pointer-events-none absolute top-[4%] left-[4%] max-w-[45%]" />
+
         <RouletteFairness v-if="round" :round="round" :verified="verified" class="absolute bottom-[4%] left-[4%] max-w-[60%]" />
 
         <!-- Mises fermées : l'état du tour et les derniers numéros en haut à droite, et le tapis en transparence en bas à
@@ -49,7 +51,7 @@ watch(
         </Transition>
         <Transition name="fade">
           <div v-if="!open" class="absolute right-[3%] bottom-[4%] w-[min(60%,720px)] opacity-90 transition-opacity duration-300 hover:opacity-25" aria-label="Vos mises">
-            <RouletteBets :view="view" :bets="shown" :winner="winner" :wins="game.wins" locked ghost />
+            <RouletteBets :view="view" :bets="shown" :others="others" :winner="winner" :wins="game.wins" locked ghost />
           </div>
         </Transition>
 
