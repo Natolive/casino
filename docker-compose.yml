@@ -13,7 +13,7 @@ services:
   # http://casino.localhost:8090 (*.localhost pointe toujours sur la machine) → le front ;
   # tableau de bord Traefik : http://traefik.casino.localhost:8090. Port réglable dans .env (HTTP_PORT).
   traefik:
-    image: traefik:v3.7.10
+    image: traefik:v3.7.15
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
